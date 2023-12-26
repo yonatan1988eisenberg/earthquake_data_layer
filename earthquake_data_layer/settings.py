@@ -1,9 +1,11 @@
+# pylint: disable=missing-module-docstring
 import os
 import re
+
 from dotenv import load_dotenv
 
 
-def get_api_keys(pattern: str = r'API_KEY\w+') -> list[str]:
+def get_api_keys(pattern: str = r"API_KEY\w+") -> list[str]:
     """
     api keys are expected to start with "API_KEY" such as API_KEY1, API_KEY2 etc.
     this function returns a list of them all.

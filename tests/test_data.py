@@ -22,5 +22,3 @@ def test_latest_update():
     # verify returned to initial state
     date, offset = Data.get_latest_update()
     assert (date, offset) == (actual_date, actual_offset)
-
-

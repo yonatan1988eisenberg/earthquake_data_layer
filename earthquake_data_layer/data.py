@@ -1,8 +1,13 @@
+# todo: add  docstring
+"""module doc string"""
 import json
+
 from earthquake_data_layer import definitions
 
 
 class Data:
+    # todo: add  docstring
+    """module doc string"""
 
     @classmethod
     def get_latest_update(cls) -> tuple[str, int]:
@@ -29,13 +34,14 @@ class Data:
         """
         metadata = cls.get_metadate()
         metadata.update({"latest_update": {"date": date, "offset": offset}})
-        with open(definitions.METADATA_LOCATION, "w") as file:
+        with open(definitions.METADATA_LOCATION, "w", encoding="utf-8") as file:
             json.dump(metadata, file)
 
         return True
 
     @staticmethod
     def get_metadate() -> dict:
-        with open(definitions.METADATA_LOCATION, "r") as file:
+        """fetches the metadata from the file"""
+        with open(definitions.METADATA_LOCATION, "r", encoding="utf-8") as file:
             metadata = json.load(file)
         return metadata

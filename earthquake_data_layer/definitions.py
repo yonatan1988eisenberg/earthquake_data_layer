@@ -1,3 +1,4 @@
+# pylint: disable=missing-module-docstring
 from pathlib import Path
 
 API_URL = "https://everyearthquake.p.rapidapi.com/earthquakesByDate"
