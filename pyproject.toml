@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "earthquake-data-layer"
+version = "0.1.0"
+description = ""
+authors = ["Yonatan Eisenberg <yonatan.eis@gmail.com>"]
+readme = "README.md"
+packages = [{include = "earthquake_data_layer"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+pylint = "^3.0.3"
+black = "22.6.0"
+isort = "5.10.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
