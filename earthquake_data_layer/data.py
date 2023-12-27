@@ -36,14 +36,8 @@ class Data:
         """
         metadata = cls.get_metadate()
         latest_update = metadata.get("latest_update", {})
-        date = latest_update.get("date")
-        offset = latest_update.get("offset")
-
-        if not date:
-            date = "1638-01-01"
-
-        if not offset:
-            offset = 1
+        date = latest_update.get("date", "1638-01-01")
+        offset = latest_update.get("offset", 1)
 
         return date, offset
 
@@ -58,10 +52,15 @@ class Data:
 
     @staticmethod
     def get_metadate() -> dict:
-        """fetches the metadata from the file"""
-        with open(definitions.METADATA_LOCATION, "r", encoding="utf-8") as file:
-            metadata = json.load(file)
-        return metadata
+        """Fetches the metadata from the file"""
+        try:
+            with open(definitions.METADATA_LOCATION, "r", encoding="utf-8") as file:
+                metadata = json.load(file)
+            return metadata
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            # Log or handle the exception appropriately
+            print(f"Error reading metadata: {e}")
+            return {}
 
     @classmethod
     def get_remaining_requests(cls, key: str) -> int:
