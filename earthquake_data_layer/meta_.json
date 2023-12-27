@@ -1,1 +1,9 @@
-{"latest_update": {"date": "1638-01-01", "offset": 1}}
+{
+  "latest_update": {
+    "date": "1638-01-01",
+    "offset": 1
+  },
+  "keys": {
+    "key1": {"2023-01-01": 150}
+  }
+}
