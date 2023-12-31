@@ -4,14 +4,15 @@ import datetime
 import json
 
 from earthquake_data_layer import definitions
+from earthquake_data_layer.helpers import is_valid_date
 
 
-class Data:
+class Metadata:
     # todo: add docstring
     """module doc string"""
 
     @classmethod
-    def update_metadata(cls, metadata: dict):
+    def _update_metadata(cls, metadata: dict):
         """
         Update metadata with the provided dictionary.
 
@@ -30,25 +31,51 @@ class Data:
             return False
 
     @classmethod
-    def get_latest_update(cls) -> tuple[str, int]:
+    def get_collection_dates(cls) -> tuple:
         """
         loads the latest_update date and offset from the metadata file
         """
         metadata = cls.get_metadate()
-        latest_update = metadata.get("latest_update", {})
-        date = latest_update.get("date", "1638-01-01")
-        offset = latest_update.get("offset", 1)
-
-        return date, offset
+        collection_dates = metadata.get("collection_dates", {})
+        start_date = collection_dates.get("start_date", False)
+        end_date = collection_dates.get("end_date", False)
+        offset = collection_dates.get("offset", 1)
+        collection_start_date = collection_dates.get("collection_start_date", False)
+        return start_date, end_date, offset, collection_start_date
 
     @classmethod
-    def update_latest_update(cls, date: str, offset: int) -> bool:
+    def update_collection_dates(cls, **kwargs) -> bool:
         """
-        updates the latest_update in the metadate file
+        updates the collection dates in the metadate file
         """
+        start_date = kwargs.get("start_date")
+        end_date = kwargs.get("end_date")
+        offset = kwargs.get("offset")
+        collection_start_date = kwargs.get("collection_start_date")
+
         metadata = cls.get_metadate()
-        metadata.update({"latest_update": {"date": date, "offset": offset}})
-        return cls.update_metadata(metadata)
+        collection_dates = metadata.get("collection_dates")
+
+        # update dates
+        for date_name, date in zip(
+            ["start_date", "end_date", "collection_start_date"],
+            [start_date, end_date, collection_start_date],
+        ):
+            date = is_valid_date(date)
+            if date:
+                collection_dates[date_name] = date
+            else:
+                raise ValueError(
+                    f"{date_name} needs to be a datetime.date object or string in YYYY-MM-DD format"
+                )
+
+        # update offset
+        if offset:
+            collection_dates["offset"] = offset
+
+        # update metadata
+        metadata["collection_dates"] = collection_dates
+        return cls._update_metadata(metadata)
 
     @staticmethod
     def get_metadate() -> dict:
@@ -79,8 +106,8 @@ class Data:
         (definitions.MAX_REQUESTS_PER_DAY). It then updates the metadata and saves it.
 
         Example:
-        >>> remaining_requests = get_remaining_requests("your_api_key")
-        >>> print(remaining_requests)
+        # >>> remaining_requests = get_remaining_requests("your_api_key")
+        # >>> print(remaining_requests)
         150
         """
 
@@ -92,14 +119,22 @@ class Data:
 
         # if the key doesn't exist in the metadata or if the key wasn't used today
         if not key_metadata or today not in key_metadata.keys():
-            # generate the key metadata
-            key_metadata = {today: definitions.MAX_REQUESTS_PER_DAY}
-
-            # update the metadata and save it
-            keys.update(key_metadata)
-            metadata.update(keys)
-            cls.update_metadata(metadata)
-
             return definitions.MAX_REQUESTS_PER_DAY
 
         return key_metadata[today]
+
+    @classmethod
+    def update_remaining_requests(cls, key: str, requests: int) -> bool:
+
+        # get keys metadata
+        metadata = cls.get_metadate()
+        keys = metadata.get("keys", {})
+
+        # update key metadata
+        today = datetime.date.today().strftime("%Y-%m-%d")
+        keys[key] = {today: requests}
+
+        # update metadata
+        metadata["keys"] = keys
+
+        return cls._update_metadata(metadata)

@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from earthquake_data_layer import Data, Downloader
+from earthquake_data_layer import Downloader, Metadata
 
 
 @pytest.fixture
@@ -14,7 +14,7 @@ def mock_remaining_requests():
 @pytest.fixture
 def mock_data_get_remaining_requests(mock_remaining_requests):
     with patch.object(
-        Data, "get_remaining_requests", return_value=mock_remaining_requests
+        Metadata, "get_remaining_requests", return_value=mock_remaining_requests
     ):
         yield
 

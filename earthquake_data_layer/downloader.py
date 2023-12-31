@@ -8,12 +8,14 @@ from typing import Literal, Union
 
 import requests
 
-from earthquake_data_layer import Data, definitions, settings
+from earthquake_data_layer import definitions, settings
+from earthquake_data_layer.helpers import is_valid_date
+from earthquake_data_layer.metadata import Metadata
 
 
 class Downloader:
     """
-    A class for downloading data from an API.
+    A class for downloading metadata from an API.
     """
 
     @staticmethod
@@ -58,13 +60,13 @@ class Downloader:
               contains keys 'count' for the number of expected results and 'start' for the offset.
 
         Example:
-        >>> total_results = 100
-        >>> offset = 5
-        >>> base_params = {'startDate': '2023-01-01'}
-        >>> requests_params = generate_requests_params(total_results=total_results,
-        ...                                            offset=offset,
-        ...                                            base_params=base_params)
-        >>> print(requests_params)
+        # >>> total_results = 100
+        # >>> offset = 5
+        # >>> base_params = {'startDate': '2023-01-01'}
+        # >>> requests_params = generate_requests_params(total_results=total_results,
+        # ...                                            offset=offset,
+        # ...                                            base_params=base_params)
+        # >>> print(requests_params)
         [{'count': 20, 'start': 5, 'startDate': '2023-01-01'},
          {'count': 20, 'start': 25, 'startDate': '2023-01-01'},
          {'count': 20, 'start': 45, 'startDate': '2023-01-01'},
@@ -104,11 +106,11 @@ class Downloader:
         Generate base query parameters for an API request based on the specified inputs.
 
         Parameters:
-        - data_type (str, optional): The type of data to query (e.g., "earthquake"). Defaults to "earthquake".
-        - start_of_time (bool, optional): If True, sets the start date to the earliest supported date (1638-01-01).
-        - last_week (bool, optional): If True, sets the start date to one week ago from the current date.
+        - data_type (str, optional): The type of metadata to query (e.g., "earthquake"). Defaults to "earthquake".
         - start_date (str or datetime.date, optional): If provided, sets the start date to the specified value.
-          It should be in the format "YYYY-MM-DD".
+          If string it should be in the format "YYYY-MM-DD". Default is 7 days ago.
+        - end_date (str or datetime.date, optional): If provided, sets the end date to the specified value.
+          If string it should be in the format "YYYY-MM-DD". Default is today.
 
         Returns:
         dict: A dictionary containing base query parameters for the API request.
@@ -117,36 +119,40 @@ class Downloader:
         ValueError: If the provided start_date is not in the supported format "YYYY-MM-DD".
 
         Example:
-        >>> base_query_params = get_base_query_params(data_type="earthquake", last_week=True)
-        >>> print(base_query_params)
-        {'type': 'earthquake', 'startDate': '2023-12-18'}
+        # >>> base_query_params = get_base_query_params(data_type="earthquake")
+        # >>> print(base_query_params)
+        {'type': 'earthquake', 'startDate': {today}, 'endDate': {a week ago}}
         """
         # Extracting parameters with default values if not provided
         data_type = kwargs.get("data_type", "earthquake")
-        start_of_time = kwargs.get("start_of_time", False)
-        last_week = kwargs.get("last_week", False)
-        start_date = kwargs.get("start_date", False)
+        start_date = kwargs.get("start_date")
+        end_date = kwargs.get("end_date")
 
         # Set base query params
         base_query_kwargs = {"type": data_type}
 
-        if start_of_time:
-            base_query_kwargs["startDate"] = "1638-01-01"
-        elif last_week:
-            requested_date = datetime.date.today() - datetime.timedelta(weeks=1)
-            base_query_kwargs["startDate"] = requested_date.strftime("%Y-%m-%d")
-        elif not start_date:
-            if isinstance(start_date, str):
-                # Verify str is in format
-                try:
-                    datetime.datetime.strptime(start_date, "%Y-%m-%d")
-                    base_query_kwargs["startDate"] = start_date
-                except ValueError as error:
+        # check if dates were provided, parse them, or set them to default values.
+        for date_name, date in zip(
+            ["startDate", "endDate"],
+            [start_date, end_date],
+        ):
+            if date:
+                if is_valid_date(date):
+                    if isinstance(date, datetime.date):
+                        date = date.strftime("%Y-%m-%d")
+                else:
                     raise ValueError(
-                        f"{start_date} is not a supported date format, use YYYY-MM-DD"
-                    ) from error
-            elif isinstance(start_date, datetime.date):
-                base_query_kwargs["startDate"] = start_date.strftime("%Y-%m-%d")
+                        f"{date_name} needs to be a datetime.date object or string in YYYY-MM-DD format"
+                    )
+            # pylint: disable=else-if-used
+            else:
+                if date_name == "startDate":
+                    date = datetime.date.today() - datetime.timedelta(days=7)
+                    date = date.strftime("%Y-%m-%d")
+                elif date_name == "endDate":
+                    date = datetime.date.today().strftime("%Y-%m-%d")
+
+            base_query_kwargs[date_name] = date
 
         return base_query_kwargs
 
@@ -166,13 +172,13 @@ class Downloader:
         ValueError: If num_results is an integer less than 1.
 
         Example:
-        >>> get_num_results("max")
+        # >>> get_num_results("max")
         150000  # Assuming 150 remaining requests and MAX_RESULTS_PER_REQUEST is 1000
 
-        >>> get_num_results(50000)
+        # >>> get_num_results(50000)
         50000  # If 50000 is within the available API requests limit
 
-        >>> get_num_results(0)
+        # >>> get_num_results(0)
         ValueError: num_results must be larger than 0
         """
         # Validate and handle the "max" case
@@ -198,7 +204,7 @@ class Downloader:
 
         # Calculate the total available results based on remaining API requests
         for key in settings.API_KEYs:
-            remaining_requests = Data.get_remaining_requests(key)
+            remaining_requests = Metadata.get_remaining_requests(key)
             max_results += remaining_requests * definitions.MAX_RESULTS_PER_REQUEST
 
         return max_results
@@ -206,15 +212,15 @@ class Downloader:
     @classmethod
     def fetch_data(cls, **kwargs):
         """
-        Fetch data from the API.
+        Fetch metadata from the API.
 
         kwargs:
         - num_results: str|int (default 'max') - number of results to return. Use 'max' to get the maximum available
         - number of results, taking into account the nuber of results per request and remaining requests for the day.
         - Use an int > 0 to limit the number of results.
-        - data_type: str (default "earthquake") - type of data points to return
-        - start_of_time: bool (default False) - returns data from the beginning of time (1638)
-        - last_week: bool (default False) - returns data from the last week. overrides start_of_time if both are True
+        - data_type: str (default "earthquake") - type of metadata points to return
+        - start_of_time: bool (default False) - returns metadata from the beginning of time (1638)
+        - last_week: bool (default False) - returns metadata from the last week. overrides start_of_time if both are True
         - start_date: str|datetime.date|bool (default False) - a date to begin the search from. str must be
           in YYYY-MM-DD format. overrides start_of_time and last_week if any of them is True
         - offset: int (default 1) - an offset
@@ -230,7 +236,7 @@ class Downloader:
 
             headers = [
                 [{"X-RapidAPI-Key": key, "X-RapidAPI-Host": settings.API_HOST}]
-                * Data.get_remaining_requests(key)
+                * Metadata.get_remaining_requests(key)
                 for key in settings.API_KEYs
             ][: len(requests_params)]
 
