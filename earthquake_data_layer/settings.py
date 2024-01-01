@@ -24,5 +24,8 @@ DEBUG = False
 API_HOST = os.getenv("API_HOST", None)
 API_KEYs = get_api_keys()
 
+# metadata
+LOCAL_METADATA = True
+
 # logging
 LOGLEVEL = os.getenv("LOG_LEVEL", "INFO").upper()

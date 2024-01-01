@@ -1,9 +1,8 @@
-# todo: add  docstring
-"""module doc string"""
 import datetime
 import json
+import logging
 
-from earthquake_data_layer import definitions
+from earthquake_data_layer import definitions, settings
 from earthquake_data_layer.helpers import is_valid_date
 
 
@@ -22,13 +21,16 @@ class Metadata:
         Returns:
         bool: True if the update is successful, False otherwise.
         """
-        try:
-            with open(definitions.METADATA_LOCATION, "w", encoding="utf-8") as file:
-                json.dump(metadata, file)
-            return True
-        except Exception:
-            # todo: Log or handle the exception appropriately
-            return False
+        if settings.LOCAL_METADATA:
+            try:
+                with open(definitions.METADATA_LOCATION, "w", encoding="utf-8") as file:
+                    json.dump(metadata, file)
+                return True
+            except Exception as error:
+                logging.error(f"can't open file: {error.__traceback__}")
+                return False
+        else:
+            raise NotImplementedError
 
     @classmethod
     def get_collection_dates(cls) -> tuple:
@@ -79,15 +81,18 @@ class Metadata:
 
     @staticmethod
     def get_metadate() -> dict:
-        """Fetches the metadata from the file"""
-        try:
-            with open(definitions.METADATA_LOCATION, "r", encoding="utf-8") as file:
-                metadata = json.load(file)
-            return metadata
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            # Log or handle the exception appropriately
-            print(f"Error reading metadata: {e}")
-            return {}
+        """Fetches the metadata from the file/cloud"""
+        if settings.LOCAL_METADATA:
+            try:
+                with open(definitions.METADATA_LOCATION, "r", encoding="utf-8") as file:
+                    metadata = json.load(file)
+                return metadata
+            except (FileNotFoundError, json.JSONDecodeError) as e:
+                # Log or handle the exception appropriately
+                print(f"Error reading metadata: {e}")
+                return {}
+        else:
+            raise NotImplementedError
 
     @classmethod
     def get_remaining_requests(cls, key: str) -> int:
