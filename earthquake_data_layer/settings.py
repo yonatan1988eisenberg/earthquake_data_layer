@@ -25,6 +25,7 @@ API_HOST = os.getenv("API_HOST", None)
 API_KEYs = get_api_keys()
 
 # aws
+AWS_S3_ENDPOINT = os.getenv("AWS_S3_ENDPOINT", None)
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", None)
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", None)
 AWS_REGION = os.getenv("AWS_REGION", None)
