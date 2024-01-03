@@ -10,12 +10,11 @@ import requests
 
 from earthquake_data_layer import definitions, settings
 from earthquake_data_layer.helpers import is_valid_date
-from earthquake_data_layer.metadata import Metadata
 
 
 class Downloader:
     """
-    A class for downloading metadata from an API.
+    A class for downloading data from an API.
     """
 
     @staticmethod
@@ -203,9 +202,11 @@ class Downloader:
         max_results = 0
 
         # Calculate the total available results based on remaining API requests
-        for key in settings.API_KEYs:
-            remaining_requests = Metadata.get_remaining_requests(key)
-            max_results += remaining_requests * definitions.MAX_RESULTS_PER_REQUEST
+        for _ in settings.API_KEYs:
+            # todo: embed metadata into the process and recalculate
+            pass
+            # remaining_requests = MetadataManager.key_remaining_requests(key)
+            # max_results += remaining_requests * definitions.MAX_RESULTS_PER_REQUEST
 
         return max_results
 
@@ -216,14 +217,14 @@ class Downloader:
 
         kwargs:
         - num_results: str|int (default 'max') - number of results to return. Use 'max' to get the maximum available
-        - number of results, taking into account the nuber of results per request and remaining requests for the day.
-        - Use an int > 0 to limit the number of results.
+          number of results, taking into account the nuber of results per request and remaining requests for the day
+          Use an int > 0 to limit the number of results
         - data_type: str (default "earthquake") - type of metadata points to return
-        - start_of_time: bool (default False) - returns metadata from the beginning of time (1638)
-        - last_week: bool (default False) - returns metadata from the last week. overrides start_of_time if both are True
-        - start_date: str|datetime.date|bool (default False) - a date to begin the search from. str must be
-          in YYYY-MM-DD format. overrides start_of_time and last_week if any of them is True
-        - offset: int (default 1) - an offset
+        - start_date: str|datetime.date|bool (default {7 days ago}) - a date to begin the search from. str must be
+          in YYYY-MM-DD format
+        - end_date: str|datetime.date|bool (default {today}) - a date to end the search to. str must be
+          in YYYY-MM-DD format
+        - offset: int (default 1) - an offset to the returned rows
         - key: str (default settings.API_KEYs[0]) - a valid api key.
         """
         try:
@@ -234,11 +235,12 @@ class Downloader:
                 total_results=num_results, offset=offset, base_params=base_query_kwargs
             )
 
-            headers = [
-                [{"X-RapidAPI-Key": key, "X-RapidAPI-Host": settings.API_HOST}]
-                * Metadata.get_remaining_requests(key)
-                for key in settings.API_KEYs
-            ][: len(requests_params)]
+            headers = [None] * len(requests_params)
+            #     [
+            #     [{"X-RapidAPI-Key": key, "X-RapidAPI-Host": settings.API_HOST}]
+            #     * MetadataManager.key_remaining_requests(key)
+            #     for key in settings.API_KEYs
+            # ][: len(requests_params)]
 
             with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
                 api_responses = list(
@@ -247,7 +249,7 @@ class Downloader:
 
             # todo: Process the API responses as needed
             with open(
-                f"{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}_data",
+                f"{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}_data.json",
                 "w",
                 encoding="utf-8",
             ) as file:

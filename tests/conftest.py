@@ -1,6 +1,5 @@
 # pylint: disable=redefined-outer-name,unused-argument,import-outside-toplevel
 import os
-from unittest.mock import patch
 
 import boto3
 import pytest
@@ -18,14 +17,6 @@ def blank_metadata():
         },
         "keys": {},
     }
-
-
-@pytest.fixture
-def get_blank_metadata(blank_metadata):
-    with patch(
-        "earthquake_data_layer.Metadata.get_metadate", return_value=blank_metadata
-    ):
-        yield
 
 
 @pytest.fixture(scope="module")

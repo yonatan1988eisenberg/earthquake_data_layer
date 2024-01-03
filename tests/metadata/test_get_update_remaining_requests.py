@@ -1,20 +1,21 @@
-from unittest.mock import mock_open, patch
-
 from freezegun import freeze_time
 
-from earthquake_data_layer import Metadata, definitions
+from earthquake_data_layer import MetadataManager, definitions
 
 
-# pylint: disable=unused-argument
-def test_get_remaining_requests_no_key(get_blank_metadata):
-    result = Metadata.get_remaining_requests("nonexistent_key")
+def test_get_remaining_requests_no_key(blank_metadata):
+    metadata_manager = MetadataManager(blank_metadata)
+    result = metadata_manager.key_remaining_requests("nonexistent_key")
 
     assert result == definitions.MAX_REQUESTS_PER_DAY
 
 
 def test_get_remaining_requests_key_not_used_today():
     mock_metadata_file_content = {"keys": {"api_key": {"2023-01-01": 100}}}
-    result = Metadata.get_remaining_requests("api_key", mock_metadata_file_content)
+    metadata_manager = MetadataManager(mock_metadata_file_content)
+    result = metadata_manager.key_remaining_requests("nonexistent_key")
+
+    result = metadata_manager.key_remaining_requests("api_key")
 
     assert result == definitions.MAX_REQUESTS_PER_DAY
 
@@ -22,39 +23,19 @@ def test_get_remaining_requests_key_not_used_today():
 @freeze_time("2023-12-27")
 def test_get_remaining_requests_key_used_today():
     mock_metadata_file_content = {"keys": {"api_key": {"2023-12-27": 50}}}
-    result = Metadata.get_remaining_requests("api_key", mock_metadata_file_content)
+    metadata_manager = MetadataManager(mock_metadata_file_content)
+    result = metadata_manager.key_remaining_requests("api_key")
 
     assert result == 50
 
 
 @freeze_time("2023-12-27")
-def test_update_remaining_requests_no_upload():
+def test_update_remaining_requests():
     mock_metadata = {"keys": {"api_key": {"2023-12-27": 100}}}
+    metadata_manager = MetadataManager(mock_metadata)
 
-    with patch(
-        "earthquake_data_layer.Metadata.get_metadate", return_value=mock_metadata
-    ), patch("builtins.open", mock_open()):
-        result = Metadata.update_remaining_requests("api_key", 50)
+    new_value = 50
+    result = metadata_manager.update_key_remaining_requests("api_key", new_value)
 
-    expected_metadata = mock_metadata
-    expected_metadata["keys"]["api_key"] = {"2023-12-27": 50}
-
-    assert result is expected_metadata
-
-
-@freeze_time("2023-12-27")
-def test_update_remaining_requests_upload():
-    mock_metadata = {"keys": {"api_key": {"2023-12-27": 100}}}
-
-    with patch(
-        "earthquake_data_layer.Metadata._update_metadata", return_value=True
-    ) as _update_metadata, patch("builtins.open", mock_open()):
-        result = Metadata.update_remaining_requests(
-            "api_key", 50, mock_metadata, upload=True
-        )
-
-    expected_metadata = mock_metadata
-    expected_metadata["keys"]["api_key"] = {"2023-12-27": 50}
-
-    assert result is True
-    _update_metadata.assert_called_with(expected_metadata)
+    assert result
+    assert metadata_manager.key_remaining_requests("api_key") == new_value

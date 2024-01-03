@@ -9,16 +9,62 @@ from earthquake_data_layer import definitions, settings, storage
 from earthquake_data_layer.helpers import is_valid_date
 
 
-class Metadata:
+class MetadataManager:
     """A class for managing metadata related to earthquake data."""
 
-    @classmethod
-    def _update_metadata(
-        cls,
-        metadata: dict,
-        local: bool = settings.LOCAL_METADATA,
-        bucket: str = settings.AWS_BUCKET_NAME,
-    ) -> bool:
+    def __init__(self, metadata: Optional[dict] = None, **kwargs):
+
+        self.local = kwargs.get("local", settings.LOCAL_METADATA)
+        self.bucket = kwargs.get("bucket", settings.AWS_BUCKET_NAME)
+
+        if not metadata:
+            metadata = self.get_metadate()
+        self.metadata = metadata
+
+    def get_metadate(self) -> dict:
+        """
+        Fetch metadata from the file or cloud storage.
+
+        Parameters:
+        - local (bool): Flag indicating whether to use local storage (default is settings.LOCAL_METADATA).
+        - bucket (str): The AWS S3 bucket name (default is settings.AWS_BUCKET_NAME).
+
+        Returns:
+        dict: The metadata dictionary.
+        """
+        if self.local:
+            try:
+                with open(definitions.METADATA_LOCATION, "r", encoding="utf-8") as file:
+                    metadata = json.load(file)
+
+            except (FileNotFoundError, json.JSONDecodeError) as error:
+                logging.info(
+                    f"Error reading metadata file, returning empty dict: {error}"
+                )
+                return {}
+        else:
+            try:
+                connection = storage.Storage()
+                if definitions.METADATA_KEY in connection.list_objects(
+                    self.bucket, definitions.METADATA_KEY
+                ):
+                    metadata = connection.load_object(
+                        definitions.METADATA_KEY, bucket_name=self.bucket
+                    )
+                    metadata.seek(0)
+                    metadata = json.loads(metadata.read().decode("utf-8"))
+
+                else:
+                    metadata = {}
+            except (ClientError, json.JSONDecodeError) as error:
+                logging.info(
+                    f"Error reading metadata file, returning empty dict: {error.__traceback__}"
+                )
+                metadata = {}
+
+        return metadata
+
+    def _save_metadata(self) -> bool:
         """
         Update metadata with the provided dictionary.
 
@@ -30,10 +76,10 @@ class Metadata:
         Returns:
         bool: True if the update is successful, False otherwise.
         """
-        if local:
+        if self.local:
             try:
                 with open(definitions.METADATA_LOCATION, "w", encoding="utf-8") as file:
-                    json.dump(metadata, file)
+                    json.dump(self.metadata, file)
                 return True
             except Exception as error:
                 logging.error(f"Unable to open file: {error.__traceback__}")
@@ -42,9 +88,9 @@ class Metadata:
             try:
                 connection = storage.Storage()
                 transaction = connection.save_object(
-                    json.dumps(metadata).encode("utf-8"),
+                    json.dumps(self.metadata).encode("utf-8"),
                     definitions.METADATA_KEY,
-                    bucket_name=bucket,
+                    bucket_name=self.bucket,
                 )
                 assert transaction is True
                 return True
@@ -53,8 +99,8 @@ class Metadata:
                 logging.info(f"Error uploading metadata file: {error.__traceback__}")
                 return False
 
-    @classmethod
-    def get_collection_dates(cls, metadata: Optional[dict] = None) -> tuple:
+    @property
+    def collection_dates(self) -> tuple:
         """
         Get the latest collection dates from the metadata file.
 
@@ -64,18 +110,16 @@ class Metadata:
         Returns:
         tuple: A tuple containing start_date, end_date, offset, and collection_start_date.
         """
-        if not metadata:
-            metadata = cls.get_metadate()
-        collection_dates = metadata.get("collection_dates", {})
+
+        collection_dates = self.metadata.get("collection_dates", {})
         start_date = collection_dates.get("start_date", False)
         end_date = collection_dates.get("end_date", False)
         offset = collection_dates.get("offset", 1)
         collection_start_date = collection_dates.get("collection_start_date", False)
         return start_date, end_date, offset, collection_start_date
 
-    @classmethod
     def update_collection_dates(
-        cls, metadata: Optional[dict] = None, upload: bool = False, **kwargs
+        self, save: bool = False, **kwargs
     ) -> Union[bool, dict]:
         """
         Update the collection dates in the metadata file.
@@ -96,9 +140,7 @@ class Metadata:
         offset = kwargs.get("offset")
         collection_start_date = kwargs.get("collection_start_date")
 
-        if not metadata:
-            metadata = cls.get_metadate()
-        collection_dates = metadata.get("collection_dates")
+        collection_dates = self.metadata.get("collection_dates")
 
         # update dates
         for date_name, date in zip(
@@ -118,60 +160,14 @@ class Metadata:
             collection_dates["offset"] = offset
 
         # update metadata
-        metadata["collection_dates"] = collection_dates
+        self.metadata["collection_dates"] = collection_dates
 
-        if upload:
-            return cls._update_metadata(metadata)
+        if save:
+            return self._save_metadata()
 
-        return metadata
+        return True
 
-    @staticmethod
-    def get_metadate(
-        local: bool = settings.LOCAL_METADATA, bucket: str = settings.AWS_BUCKET_NAME
-    ) -> dict:
-        """
-        Fetch metadata from the file or cloud storage.
-
-        Parameters:
-        - local (bool): Flag indicating whether to use local storage (default is settings.LOCAL_METADATA).
-        - bucket (str): The AWS S3 bucket name (default is settings.AWS_BUCKET_NAME).
-
-        Returns:
-        dict: The metadata dictionary.
-        """
-        if local:
-            try:
-                with open(definitions.METADATA_LOCATION, "r", encoding="utf-8") as file:
-                    metadata = json.load(file)
-
-            except (FileNotFoundError, json.JSONDecodeError) as error:
-                logging.info(
-                    f"Error reading metadata file, returning empty dict: {error}"
-                )
-                return {}
-        else:
-            try:
-                connection = storage.Storage()
-                if definitions.METADATA_KEY in connection.list_objects(
-                    bucket, definitions.METADATA_KEY
-                ):
-                    metadata = connection.load_object(
-                        definitions.METADATA_KEY, bucket_name=bucket
-                    )
-                    metadata = json.loads(metadata.read().decode("utf-8"))
-
-                else:
-                    metadata = {}
-            except (ClientError, json.JSONDecodeError) as error:
-                logging.info(
-                    f"Error reading metadata file, returning empty dict: {error.__traceback__}"
-                )
-                metadata = {}
-
-        return metadata
-
-    @classmethod
-    def get_remaining_requests(cls, key: str, metadata: Optional[dict] = None) -> int:
+    def key_remaining_requests(self, key: str) -> int:
         """
         Get today's remaining requests for the specified API key.
 
@@ -192,9 +188,8 @@ class Metadata:
         # >>> print(remaining_requests)
         150
         """
-        if not metadata:
-            metadata = cls.get_metadate()
-        keys = metadata.get("keys", {})
+
+        keys = self.metadata.get("keys", {})
         key_metadata = keys.get(key)
 
         today = datetime.date.today().strftime("%Y-%m-%d")
@@ -205,13 +200,10 @@ class Metadata:
 
         return key_metadata[today]
 
-    @classmethod
-    def update_remaining_requests(
-        cls,
+    def update_key_remaining_requests(
+        self,
         key: str,
         requests: int,
-        metadata: Optional[dict] = None,
-        upload: bool = False,
     ) -> Union[bool, dict]:
         """
         Update today's remaining requests for the specified API key.
@@ -226,18 +218,13 @@ class Metadata:
         bool or dict: True if the update is successful, False otherwise, or the updated metadata.
         """
         # get keys metadata
-        if not metadata:
-            metadata = cls.get_metadate()
-        keys = metadata.get("keys", {})
+        keys = self.metadata.get("keys", {})
 
         # update key metadata
         today = datetime.date.today().strftime("%Y-%m-%d")
         keys[key] = {today: requests}
 
         # update metadata
-        metadata["keys"] = keys
+        self.metadata["keys"] = keys
 
-        if upload:
-            return cls._update_metadata(metadata)
-
-        return metadata
+        return True
