@@ -30,18 +30,32 @@ def test_get_remaining_requests_key_used_today():
 
 
 @freeze_time("2023-12-27")
-def test_update_remaining_requests():
+def test_update_remaining_requests_no_upload():
     mock_metadata = {"keys": {"api_key": {"2023-12-27": 100}}}
 
     with patch(
         "earthquake_data_layer.Metadata.get_metadate", return_value=mock_metadata
-    ), patch(
-        "earthquake_data_layer.Metadata._update_metadata", return_value=True
-    ) as _update_metadata, patch(
-        "builtins.open", mock_open()
-    ):
+    ), patch("builtins.open", mock_open()):
 
         result = Metadata.update_remaining_requests("api_key", 50)
+
+    expected_metadata = mock_metadata
+    expected_metadata["keys"]["api_key"] = {"2023-12-27": 50}
+
+    assert result is expected_metadata
+
+
+@freeze_time("2023-12-27")
+def test_update_remaining_requests_upload():
+    mock_metadata = {"keys": {"api_key": {"2023-12-27": 100}}}
+
+    with patch(
+        "earthquake_data_layer.Metadata._update_metadata", return_value=True
+    ) as _update_metadata, patch("builtins.open", mock_open()):
+
+        result = Metadata.update_remaining_requests(
+            "api_key", 50, mock_metadata, upload=True
+        )
 
     expected_metadata = mock_metadata
     expected_metadata["keys"]["api_key"] = {"2023-12-27": 50}

@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+from typing import Optional, Union
 
 from botocore.exceptions import ClientError
 
@@ -53,14 +54,15 @@ class Metadata:
                 return False
 
     @classmethod
-    def get_collection_dates(cls) -> tuple:
+    def get_collection_dates(cls, metadata: Optional[dict] = None) -> tuple:
         """
         Get the latest collection dates from the metadata file.
 
         Returns:
         tuple: A tuple containing start_date, end_date, offset, and collection_start_date.
         """
-        metadata = cls.get_metadate()
+        if not metadata:
+            metadata = cls.get_metadate()
         collection_dates = metadata.get("collection_dates", {})
         start_date = collection_dates.get("start_date", False)
         end_date = collection_dates.get("end_date", False)
@@ -69,7 +71,9 @@ class Metadata:
         return start_date, end_date, offset, collection_start_date
 
     @classmethod
-    def update_collection_dates(cls, **kwargs) -> bool:
+    def update_collection_dates(
+        cls, metadata: Optional[dict] = None, upload: bool = False, **kwargs
+    ) -> Union[bool, dict]:
         """
         Update the collection dates in the metadata file.
 
@@ -87,7 +91,8 @@ class Metadata:
         offset = kwargs.get("offset")
         collection_start_date = kwargs.get("collection_start_date")
 
-        metadata = cls.get_metadate()
+        if not metadata:
+            metadata = cls.get_metadate()
         collection_dates = metadata.get("collection_dates")
 
         # update dates
@@ -109,7 +114,11 @@ class Metadata:
 
         # update metadata
         metadata["collection_dates"] = collection_dates
-        return cls._update_metadata(metadata)
+
+        if upload:
+            return cls._update_metadata(metadata)
+
+        return metadata
 
     @staticmethod
     def get_metadate(
@@ -157,7 +166,7 @@ class Metadata:
         return metadata
 
     @classmethod
-    def get_remaining_requests(cls, key: str) -> int:
+    def get_remaining_requests(cls, key: str, metadata: Optional[dict] = None) -> int:
         """
         Get today's remaining requests for the specified API key.
 
@@ -177,7 +186,8 @@ class Metadata:
         # >>> print(remaining_requests)
         150
         """
-        metadata = cls.get_metadate()
+        if not metadata:
+            metadata = cls.get_metadate()
         keys = metadata.get("keys", {})
         key_metadata = keys.get(key)
 
@@ -190,7 +200,13 @@ class Metadata:
         return key_metadata[today]
 
     @classmethod
-    def update_remaining_requests(cls, key: str, requests: int) -> bool:
+    def update_remaining_requests(
+        cls,
+        key: str,
+        requests: int,
+        metadata: Optional[dict] = None,
+        upload: bool = False,
+    ) -> Union[bool, dict]:
         """
         Update today's remaining requests for the specified API key.
 
@@ -202,7 +218,8 @@ class Metadata:
         bool: True if the update is successful, False otherwise.
         """
         # get keys metadata
-        metadata = cls.get_metadate()
+        if not metadata:
+            metadata = cls.get_metadate()
         keys = metadata.get("keys", {})
 
         # update key metadata
@@ -212,4 +229,7 @@ class Metadata:
         # update metadata
         metadata["keys"] = keys
 
-        return cls._update_metadata(metadata)
+        if upload:
+            return cls._update_metadata(metadata)
+
+        return metadata
