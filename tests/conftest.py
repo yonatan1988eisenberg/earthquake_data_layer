@@ -1,9 +1,31 @@
 # pylint: disable=redefined-outer-name,unused-argument,import-outside-toplevel
 import os
+from unittest.mock import patch
 
 import boto3
 import pytest
 from moto import mock_s3
+
+
+@pytest.fixture
+def blank_metadata():
+    return {
+        "collection_dates": {
+            "start_date": False,
+            "end_date": False,
+            "offset": 1,
+            "collection_start_date": False,
+        },
+        "keys": {},
+    }
+
+
+@pytest.fixture
+def get_blank_metadata(blank_metadata):
+    with patch(
+        "earthquake_data_layer.Metadata.get_metadate", return_value=blank_metadata
+    ):
+        yield
 
 
 @pytest.fixture(scope="module")
