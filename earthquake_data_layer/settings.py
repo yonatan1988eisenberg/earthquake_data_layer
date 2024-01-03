@@ -32,7 +32,7 @@ AWS_REGION = os.getenv("AWS_REGION", None)
 AWS_BUCKET_NAME = os.getenv("AWS_BUCKET_NAME", None)
 
 # metadata
-LOCAL_METADATA = True
+LOCAL_METADATA = False
 
 # logging
 LOGLEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
