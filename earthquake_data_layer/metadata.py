@@ -13,7 +13,12 @@ class Metadata:
     """module doc string"""
 
     @classmethod
-    def _update_metadata(cls, metadata: dict):
+    def _update_metadata(
+        cls,
+        metadata: dict,
+        local: bool = settings.LOCAL_METADATA,
+        bucket: str = settings.AWS_BUCKET_NAME,
+    ):
         """
         Update metadata with the provided dictionary.
 
@@ -23,7 +28,7 @@ class Metadata:
         Returns:
         bool: True if the update is successful, False otherwise.
         """
-        if settings.LOCAL_METADATA:
+        if local:
             try:
                 with open(definitions.METADATA_LOCATION, "w", encoding="utf-8") as file:
                     json.dump(metadata, file)
@@ -32,7 +37,19 @@ class Metadata:
                 logging.error(f"can't open file: {error.__traceback__}")
                 return False
         else:
-            raise NotImplementedError
+            try:
+                connection = storage.Storage()
+                transaction = connection.save_object(
+                    json.dumps(metadata).encode("utf-8"),
+                    definitions.METADATA_KEY,
+                    bucket_name=bucket,
+                )
+                assert transaction is True
+                return True
+
+            except (ClientError, AssertionError) as error:
+                logging.info(f"Error uploading metadata file: {error.__traceback__}")
+                return False
 
     @classmethod
     def get_collection_dates(cls) -> tuple:
@@ -106,13 +123,15 @@ class Metadata:
                     metadata = connection.load_object(
                         definitions.METADATA_KEY, bucket_name=bucket
                     )
+                    metadata = json.loads(metadata.read().decode("utf-8"))
+
                 else:
                     metadata = {}
-            except ClientError as error:
+            except (ClientError, json.JSONDecodeError) as error:
                 logging.info(
-                    f"Error reading metadata file, returning empty dict: {error}"
+                    f"Error reading metadata file, returning empty dict: {error.__traceback__}"
                 )
-                return {}
+                metadata = {}
 
         return metadata
 
@@ -152,7 +171,6 @@ class Metadata:
 
     @classmethod
     def update_remaining_requests(cls, key: str, requests: int) -> bool:
-
         # get keys metadata
         metadata = cls.get_metadate()
         keys = metadata.get("keys", {})
