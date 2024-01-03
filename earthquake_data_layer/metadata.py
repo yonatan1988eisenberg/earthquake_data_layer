@@ -9,8 +9,7 @@ from earthquake_data_layer.helpers import is_valid_date
 
 
 class Metadata:
-    # todo: add docstring
-    """module doc string"""
+    """A class for managing metadata related to earthquake data."""
 
     @classmethod
     def _update_metadata(
@@ -18,12 +17,14 @@ class Metadata:
         metadata: dict,
         local: bool = settings.LOCAL_METADATA,
         bucket: str = settings.AWS_BUCKET_NAME,
-    ):
+    ) -> bool:
         """
         Update metadata with the provided dictionary.
 
         Parameters:
         - metadata (dict): The metadata dictionary to be updated.
+        - local (bool): Flag indicating whether to use local storage (default is settings.LOCAL_METADATA).
+        - bucket (str): The AWS S3 bucket name (default is settings.AWS_BUCKET_NAME).
 
         Returns:
         bool: True if the update is successful, False otherwise.
@@ -34,7 +35,7 @@ class Metadata:
                     json.dump(metadata, file)
                 return True
             except Exception as error:
-                logging.error(f"can't open file: {error.__traceback__}")
+                logging.error(f"Unable to open file: {error.__traceback__}")
                 return False
         else:
             try:
@@ -54,7 +55,10 @@ class Metadata:
     @classmethod
     def get_collection_dates(cls) -> tuple:
         """
-        loads the latest_update date and offset from the metadata file
+        Get the latest collection dates from the metadata file.
+
+        Returns:
+        tuple: A tuple containing start_date, end_date, offset, and collection_start_date.
         """
         metadata = cls.get_metadate()
         collection_dates = metadata.get("collection_dates", {})
@@ -67,7 +71,16 @@ class Metadata:
     @classmethod
     def update_collection_dates(cls, **kwargs) -> bool:
         """
-        updates the collection dates in the metadate file
+        Update the collection dates in the metadata file.
+
+        Parameters:
+        - kwargs: Keyword arguments for start_date, end_date, offset, and collection_start_date.
+
+        Returns:
+        bool: True if the update is successful, False otherwise.
+
+        Raises:
+        ValueError: If date values are not in the expected format.
         """
         start_date = kwargs.get("start_date")
         end_date = kwargs.get("end_date")
@@ -102,14 +115,22 @@ class Metadata:
     def get_metadate(
         local: bool = settings.LOCAL_METADATA, bucket: str = settings.AWS_BUCKET_NAME
     ) -> dict:
-        """Fetches the metadata from the file/cloud"""
+        """
+        Fetch metadata from the file or cloud storage.
+
+        Parameters:
+        - local (bool): Flag indicating whether to use local storage (default is settings.LOCAL_METADATA).
+        - bucket (str): The AWS S3 bucket name (default is settings.AWS_BUCKET_NAME).
+
+        Returns:
+        dict: The metadata dictionary.
+        """
         if local:
             try:
                 with open(definitions.METADATA_LOCATION, "r", encoding="utf-8") as file:
                     metadata = json.load(file)
 
             except (FileNotFoundError, json.JSONDecodeError) as error:
-                # Log or handle the exception appropriately
                 logging.info(
                     f"Error reading metadata file, returning empty dict: {error}"
                 )
@@ -138,7 +159,7 @@ class Metadata:
     @classmethod
     def get_remaining_requests(cls, key: str) -> int:
         """
-        Return today's remaining requests for the specified API key.
+        Get today's remaining requests for the specified API key.
 
         Parameters:
         - key (str): The API key for which to retrieve remaining requests.
@@ -156,7 +177,6 @@ class Metadata:
         # >>> print(remaining_requests)
         150
         """
-
         metadata = cls.get_metadate()
         keys = metadata.get("keys", {})
         key_metadata = keys.get(key)
@@ -171,6 +191,16 @@ class Metadata:
 
     @classmethod
     def update_remaining_requests(cls, key: str, requests: int) -> bool:
+        """
+        Update today's remaining requests for the specified API key.
+
+        Parameters:
+        - key (str): The API key for which to update remaining requests.
+        - requests (int): The new remaining number of requests.
+
+        Returns:
+        bool: True if the update is successful, False otherwise.
+        """
         # get keys metadata
         metadata = cls.get_metadate()
         keys = metadata.get("keys", {})
