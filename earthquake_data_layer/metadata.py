@@ -58,6 +58,9 @@ class Metadata:
         """
         Get the latest collection dates from the metadata file.
 
+        Parameters:
+        - metadata (dict, optional): The metadata dictionary (default is None, and it will be fetched if not provided).
+
         Returns:
         tuple: A tuple containing start_date, end_date, offset, and collection_start_date.
         """
@@ -78,10 +81,12 @@ class Metadata:
         Update the collection dates in the metadata file.
 
         Parameters:
+        - metadata (dict, optional): The metadata dictionary (default is None, and it will be fetched if not provided).
+        - upload (bool): Flag indicating whether to upload the updated metadata (default is False).
         - kwargs: Keyword arguments for start_date, end_date, offset, and collection_start_date.
 
         Returns:
-        bool: True if the update is successful, False otherwise.
+        bool or dict: True if the update is successful, False otherwise, or the updated metadata.
 
         Raises:
         ValueError: If date values are not in the expected format.
@@ -172,6 +177,7 @@ class Metadata:
 
         Parameters:
         - key (str): The API key for which to retrieve remaining requests.
+        - metadata (dict, optional): The metadata dictionary (default is None, and it will be fetched if not provided).
 
         Returns:
         int: The remaining number of requests allowed for the specified key today.
@@ -213,9 +219,11 @@ class Metadata:
         Parameters:
         - key (str): The API key for which to update remaining requests.
         - requests (int): The new remaining number of requests.
+        - metadata (dict, optional): The metadata dictionary (default is None, and it will be fetched if not provided).
+        - upload (bool): Flag indicating whether to upload the updated metadata (default is False).
 
         Returns:
-        bool: True if the update is successful, False otherwise.
+        bool or dict: True if the update is successful, False otherwise, or the updated metadata.
         """
         # get keys metadata
         if not metadata:
