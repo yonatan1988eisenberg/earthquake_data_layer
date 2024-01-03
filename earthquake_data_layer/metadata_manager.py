@@ -192,13 +192,15 @@ class MetadataManager:
         keys = self.metadata.get("keys", {})
         key_metadata = keys.get(key)
 
-        today = datetime.date.today().strftime("%Y-%m-%d")
-
         # if the key doesn't exist in the metadata or if the key wasn't used today
-        if not key_metadata or today not in key_metadata.keys():
+        if (
+            not key_metadata
+            or definitions.TODAY.strftime(definitions.DATE_FORMAT)
+            not in key_metadata.keys()
+        ):
             return definitions.MAX_REQUESTS_PER_DAY
 
-        return key_metadata[today]
+        return key_metadata[definitions.TODAY.strftime(definitions.DATE_FORMAT)]
 
     def update_key_remaining_requests(
         self,
@@ -221,7 +223,7 @@ class MetadataManager:
         keys = self.metadata.get("keys", {})
 
         # update key metadata
-        today = datetime.date.today().strftime("%Y-%m-%d")
+        today = datetime.date.today().strftime(definitions.DATE_FORMAT)
         keys[key] = {today: requests}
 
         # update metadata

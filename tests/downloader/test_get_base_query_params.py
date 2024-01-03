@@ -1,51 +1,55 @@
 import datetime
+from copy import deepcopy
 
 import pytest
-from freezegun import freeze_time
 
-from earthquake_data_layer import Downloader
-
-freeze_time("2023-01-01")
+from earthquake_data_layer import Downloader, MetadataManager, definitions, settings
 
 
-def test_get_base_query_params_defaults():
-    expected_start_date = datetime.date.today() - datetime.timedelta(days=7)
-    expected_start_date = expected_start_date.strftime("%Y-%m-%d")
-    expected_end_date = datetime.date.today().strftime("%Y-%m-%d")
+def test_get_base_query_params_update_mode(blank_metadata):
+    expected_start_date = datetime.date.today() - datetime.timedelta(
+        days=settings.UPDATE_TIME_DELTA_DAYS
+    )
+    expected_start_date = expected_start_date.strftime(definitions.DATE_FORMAT)
+    expected_end_date = datetime.date.today().strftime(definitions.DATE_FORMAT)
 
-    base_query_params = Downloader.get_base_query_params()
+    downloader = Downloader(MetadataManager(blank_metadata), mode="update")
+    base_query_params = downloader.get_base_query_params()
 
     assert base_query_params == {
         "startDate": expected_start_date,
         "endDate": expected_end_date,
-        "type": "earthquake",
+        "type": settings.DATA_TYPE_TO_FETCH,
     }
 
 
-def test_get_base_query_params_custom_start_date():
-    expected_end_date = datetime.date.today().strftime("%Y-%m-%d")
-    base_query_params = Downloader.get_base_query_params(start_date="2023-01-01")
+def test_get_base_query_params_collection_mode(blank_metadata):
+    expected_start = "2023-01-01"
+    expected_end = "2023-02-01"
+
+    mock_metadata = deepcopy(blank_metadata)
+    mock_metadata["collection_dates"]["start_date"] = expected_start
+    mock_metadata["collection_dates"]["end_date"] = expected_end
+
+    downloader = Downloader(MetadataManager(mock_metadata))
+    base_query_params = downloader.get_base_query_params()
+
     assert base_query_params == {
-        "type": "earthquake",
-        "endDate": expected_end_date,
-        "startDate": "2023-01-01",
+        "type": settings.DATA_TYPE_TO_FETCH,
+        "endDate": expected_end,
+        "startDate": expected_start,
     }
 
 
-def test_get_base_query_params_invalid_start_date():
+def test_get_base_query_params_invalid_start_date(blank_metadata):
+    expected_start = "invalid_date_format"
+
+    mock_metadata = deepcopy(blank_metadata)
+    mock_metadata["collection_dates"]["start_date"] = expected_start
+
+    downloader = Downloader(MetadataManager(mock_metadata))
     with pytest.raises(
         ValueError,
         match=r".* needs to be a datetime.date object or string in YYYY-MM-DD format",
     ):
-        Downloader.get_base_query_params(start_date="invalid-date-format")
-
-
-def test_get_base_query_params_datetime_start_date():
-    expected_end_date = datetime.date.today().strftime("%Y-%m-%d")
-    start_date = datetime.date(2023, 1, 1)
-    base_query_params = Downloader.get_base_query_params(start_date=start_date)
-    assert base_query_params == {
-        "type": "earthquake",
-        "startDate": "2023-01-01",
-        "endDate": expected_end_date,
-    }
+        downloader.get_base_query_params()

@@ -1,5 +1,3 @@
-from freezegun import freeze_time
-
 from earthquake_data_layer import MetadataManager, definitions
 
 
@@ -20,16 +18,16 @@ def test_get_remaining_requests_key_not_used_today():
     assert result == definitions.MAX_REQUESTS_PER_DAY
 
 
-@freeze_time("2023-12-27")
 def test_get_remaining_requests_key_used_today():
-    mock_metadata_file_content = {"keys": {"api_key": {"2023-12-27": 50}}}
+    mock_metadata_file_content = {
+        "keys": {"api_key": {definitions.TODAY.strftime(definitions.DATE_FORMAT): 50}}
+    }
     metadata_manager = MetadataManager(mock_metadata_file_content)
     result = metadata_manager.key_remaining_requests("api_key")
 
     assert result == 50
 
 
-@freeze_time("2023-12-27")
 def test_update_remaining_requests():
     mock_metadata = {"keys": {"api_key": {"2023-12-27": 100}}}
     metadata_manager = MetadataManager(mock_metadata)

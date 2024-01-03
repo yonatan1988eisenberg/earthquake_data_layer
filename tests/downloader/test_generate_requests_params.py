@@ -1,27 +1,78 @@
-from earthquake_data_layer import Downloader, definitions
+from copy import deepcopy
+from unittest.mock import patch
+
+from earthquake_data_layer import Downloader, MetadataManager, definitions, settings
 
 
-def test_default_parameters():
-    result = Downloader.generate_requests_params()
-    assert result == [{"count": definitions.MAX_RESULTS_PER_REQUEST, "start": 1}]
+def test_generate_requests_params_collection(blank_metadata):
 
+    useable_requests = 100
 
-def test_custom_parameters():
-    total_results = 100
-    offset = 5
-    base_params = {"startDate": "2023-01-01"}
-    result = Downloader.generate_requests_params(
-        total_results=total_results, offset=offset, base_params=base_params
-    )
+    mock_metadata = deepcopy(blank_metadata)
+    mock_metadata["keys"] = {
+        "key1": {definitions.TODAY.strftime(definitions.DATE_FORMAT): useable_requests},
+        "key2": {definitions.TODAY.strftime(definitions.DATE_FORMAT): 0},
+    }
 
-    expected_result = [
-        {"count": total_results, "start": offset, "startDate": "2023-01-01"}
+    downloader = Downloader(metadata_manager=MetadataManager(mock_metadata))
+    with patch.object(settings, "API_KEYs", {"key1": "api_key1", "key2": "api_key2"}):
+        requests_params, headers = downloader.generate_requests_params()
+        assert (
+            len(requests_params) == useable_requests - settings.REQUESTS_TOLERANCE
+        )  # Assuming useable_requests remaining requests for key1
+        assert len(headers) == useable_requests - settings.REQUESTS_TOLERANCE
+
+    offset = blank_metadata["collection_dates"]["offset"] or 1
+    expected_request_params = [
+        {
+            "count": definitions.MAX_RESULTS_PER_REQUEST,
+            "start": offset + (definitions.MAX_RESULTS_PER_REQUEST * request_num),
+            "type": settings.DATA_TYPE_TO_FETCH,
+        }
+        for request_num in range(len(requests_params))
     ]
+    assert requests_params == expected_request_params
 
-    assert result == expected_result
+    expected_headers = [
+        {"X-RapidAPI-Key": "api_key1", "X-RapidAPI-Host": settings.API_HOST}
+        for _ in range(len(headers))
+    ]
+    assert headers == expected_headers
 
 
-def test_custom_total_results():
-    total_results = 50
-    result = Downloader.generate_requests_params(total_results=total_results)
-    assert result == [{"count": total_results, "start": 1}]
+def test_generate_requests_params_update(blank_metadata):
+
+    useable_requests = 100
+
+    mock_metadata = deepcopy(blank_metadata)
+    mock_metadata["keys"] = {
+        "key1": {definitions.TODAY.strftime(definitions.DATE_FORMAT): useable_requests},
+        "key2": {definitions.TODAY.strftime(definitions.DATE_FORMAT): 0},
+    }
+
+    downloader = Downloader(
+        metadata_manager=MetadataManager(mock_metadata), mode="update"
+    )
+    with patch.object(settings, "API_KEYs", {"key1": "api_key1", "key2": "api_key2"}):
+        requests_params, headers = downloader.generate_requests_params()
+        assert (
+            len(requests_params) == settings.NUM_REQUESTS_FOR_UPDATE
+        )  # Assuming useable_requests remaining requests for key1
+        assert len(headers) == settings.NUM_REQUESTS_FOR_UPDATE
+
+    offset = blank_metadata["collection_dates"]["offset"] or 1
+    expected_request_params = [
+        {
+            "count": definitions.MAX_RESULTS_PER_REQUEST,
+            "start": offset + (definitions.MAX_RESULTS_PER_REQUEST * request_num),
+            "type": settings.DATA_TYPE_TO_FETCH,
+        }
+        for request_num in range(len(requests_params))
+    ]
+    assert requests_params == expected_request_params
+
+    expected_headers = [
+        {"X-RapidAPI-Key": "api_key1", "X-RapidAPI-Host": settings.API_HOST}
+        for _ in range(len(headers))
+    ]
+    assert headers == expected_headers

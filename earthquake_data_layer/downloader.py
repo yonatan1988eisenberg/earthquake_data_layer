@@ -1,15 +1,15 @@
 import datetime
-import json
 import logging
-import math
 import os
 from concurrent.futures import ThreadPoolExecutor
+from random import choice
 from typing import Literal, Union
 
 import requests
 
 from earthquake_data_layer import definitions, settings
 from earthquake_data_layer.helpers import is_valid_date
+from earthquake_data_layer.metadata_manager import MetadataManager
 
 
 class Downloader:
@@ -17,10 +17,113 @@ class Downloader:
     A class for downloading data from an API.
     """
 
-    @staticmethod
-    def get_api_response(
-        request_params: dict, headers: dict, url: str = definitions.API_URL
+    def __init__(
+        self,
+        metadata_manager: MetadataManager,
+        mode: Literal["collection", "update"] = "collection",
     ):
+        """
+        Initialize the Downloader class.
+
+        Parameters:
+        - metadata_manager (MetadataManager): An instance of MetadataManager for managing metadata.
+        - mode (Literal["collection", "update"], optional): The mode of the downloader ("collection" or "update").
+          Defaults to "collection".
+        """
+
+        self.metadata_manager = metadata_manager
+        self.mode = mode
+
+    @property
+    def keys_metadata(self) -> dict[str, tuple[str, int]]:
+        """
+        Property to get metadata for API keys.
+
+        Returns:
+        Dict[str, Tuple[str, int]]: A dictionary with key names as keys and tuples of API keys and remaining requests as values.
+        """
+
+        return {
+            key_name: (
+                api_key,
+                self.metadata_manager.key_remaining_requests(key_name)
+                - settings.REQUESTS_TOLERANCE,
+            )
+            for key_name, api_key in settings.API_KEYs.items()
+        }
+
+    @property
+    def start_end_dates(self) -> tuple[Union[str, None], Union[str, None]]:
+        """
+        Property to get start and end dates based on the mode.
+
+        Returns:
+        Tuple[Union[str, None], Union[str, None]]: A tuple with start_date and end_date.
+        """
+        start_date, end_date = (None, None)
+
+        if self.mode == "collection":
+            start_date, end_date, _, _ = self.metadata_manager.collection_dates
+
+        elif self.mode == "update":
+            # todo: add update dates to metadata and set start_date = last_update_date
+            start_date = (
+                definitions.TODAY
+                - datetime.timedelta(days=settings.UPDATE_TIME_DELTA_DAYS)
+            ).strftime(definitions.DATE_FORMAT)
+            end_date = definitions.TODAY.strftime(definitions.DATE_FORMAT)
+
+        return start_date, end_date
+
+    @property
+    def offset(self) -> Union[int, None]:
+        """
+        Property to get the offset based on the mode.
+
+        Returns:
+        Union[int, None]: The offset value.
+        """
+
+        offset = None
+
+        if self.mode == "collection":
+            _, _, offset, _ = self.metadata_manager.collection_dates
+
+        elif self.mode == "update":
+            offset = 1
+
+        return offset
+
+    def key_api2name(self, key: str) -> Union[str, bool]:
+        """
+        Convert API key to key name.
+
+        Parameters:
+        - key (str): The API key.
+
+        Returns:
+        str: The corresponding key name.
+        """
+        candidates = [
+            key_name
+            for key_name, api_key in settings.API_KEYs.items()
+            if api_key == key
+        ]
+        match len(candidates):
+            case 1:
+                return next(iter(candidates))
+            case 0:
+                return False
+            case _:
+                rand_candidate = choice(candidates)
+                logging.info(
+                    f"more than one API name matches the key, returning a random choice - {rand_candidate}"
+                )
+                return rand_candidate
+
+    def get_api_response(
+        self, request_params: dict, headers: dict, url: str = definitions.API_URL
+    ) -> dict:
         """
         Send a GET request to the API and return the JSON response.
 
@@ -30,102 +133,105 @@ class Downloader:
         - url (str): The URL for the API.
 
         Returns:
-        dict: The JSON response from the API.
+        dict: containing The JSON response from the API, the requests parameters and the used key's name
         """
         try:
             response = requests.get(
                 url, headers=headers, params=request_params, timeout=5
             )
-            response.raise_for_status()
-            return response.json()
+
+            return {
+                "raw_response": response.json(),
+                "metadata": {
+                    "request_params": request_params,
+                    "key_name": self.key_api2name(headers.get("X-RapidAPI-Key")),
+                },
+            }
+
         except requests.RequestException as e:
             logging.error(f"Error in API request: {e}")
             raise
 
-    @staticmethod
-    def generate_requests_params(**kwargs):
+    def generate_requests_params(
+        self, **kwargs
+    ) -> tuple[list[dict[str, Union[int, str]]], list[dict[str, str]]]:
         """
-        Generate a list of request parameters based on the specified inputs.
+        Generate a list of request parameters and headers based on the specified inputs.
 
         kwargs:
-        - total_results (int, optional): The total number of results to be retrieved.
-          Defaults to definitions.MAX_RESULTS_PER_REQUEST.
-        - offset (int, optional): The initial offset for the first request. Defaults to 1.
-        - base_params (dict, optional): Additional parameters to be included in each request.
+        - base_query_kwargs (dict, optional): Additional parameters to be included in each request.
           Defaults to an empty dictionary.
 
         Returns:
-        list: A list of dictionaries representing request parameters, where each dictionary
-              contains keys 'count' for the number of expected results and 'start' for the offset.
-
-        Example:
-        # >>> total_results = 100
-        # >>> offset = 5
-        # >>> base_params = {'startDate': '2023-01-01'}
-        # >>> requests_params = generate_requests_params(total_results=total_results,
-        # ...                                            offset=offset,
-        # ...                                            base_params=base_params)
-        # >>> print(requests_params)
-        [{'count': 20, 'start': 5, 'startDate': '2023-01-01'},
-         {'count': 20, 'start': 25, 'startDate': '2023-01-01'},
-         {'count': 20, 'start': 45, 'startDate': '2023-01-01'},
-         {'count': 20, 'start': 65, 'startDate': '2023-01-01'},
-         {'count': 20, 'start': 85, 'startDate': '2023-01-01'}]
+        Tuple[List[Dict[str, Union[int, str]]], List[Dict[str, str]]]:
+        A tuple containing a list of dictionaries representing request parameters,
+        where each dictionary contains keys 'count' for the number of expected results and 'start' for the offset,
+        and a list of dictionaries representing headers.
         """
+
         # Extracting parameters with default values if not provided
-        total_results = kwargs.get("total_results", definitions.MAX_RESULTS_PER_REQUEST)
-        offset = kwargs.get("offset", 1)
-        base_params = kwargs.get("base_params", {})
+        base_query_kwargs = kwargs.get(
+            "base_query_kwargs", {"type": settings.DATA_TYPE_TO_FETCH}
+        )
+        offset = self.offset
 
-        # Calculating the number of requests needed
-        num_requests = math.ceil(total_results / definitions.MAX_RESULTS_PER_REQUEST)
-        requests_params = []
+        # generate the request parameters and headers
+        requests_params = list()
+        headers = list()
 
-        # Iterating through each request
-        for i in range(num_requests):
-            # Calculating the remaining results and the count for the current request
-            remaining_results = total_results - (
-                i * definitions.MAX_RESULTS_PER_REQUEST
-            )
-            count = min(definitions.MAX_RESULTS_PER_REQUEST, remaining_results)
+        for _, (api_key, remaining_requests) in self.keys_metadata.items():
 
-            # Calculating the current offset for the current request
-            current_offset = offset + (i * definitions.MAX_RESULTS_PER_REQUEST)
+            for _ in range(remaining_requests):
+                # generate header
+                headers.append(
+                    {"X-RapidAPI-Key": api_key, "X-RapidAPI-Host": settings.API_HOST}
+                )
 
-            # Creating a dictionary with request parameters and adding it to the list
-            request_params = {"count": count, "start": current_offset, **base_params}
-            requests_params.append(request_params)
+                # generate query_parameters
+                count = definitions.MAX_RESULTS_PER_REQUEST
+                current_offset = offset + (
+                    len(requests_params) * definitions.MAX_RESULTS_PER_REQUEST
+                )
+                requests_params.append(
+                    {"count": count, "start": current_offset, **base_query_kwargs}
+                )
 
-        # Returning the list of request parameters
-        return requests_params
+                # get only NUM_REQUESTS_FOR_UPDATE request when updating
+                if (
+                    self.mode == "update"
+                    and len(requests_params) == settings.NUM_REQUESTS_FOR_UPDATE
+                ):
+                    break
+            # get only NUM_REQUESTS_FOR_UPDATE request when updating
+            if (
+                self.mode == "update"
+                and len(requests_params) == settings.NUM_REQUESTS_FOR_UPDATE
+            ):
+                break
 
-    @staticmethod
-    def get_base_query_params(**kwargs) -> dict:
+        # Returning the lists of request parameters and headers
+        return requests_params, headers
+
+    def get_base_query_params(self, **kwargs) -> dict:
         """
         Generate base query parameters for an API request based on the specified inputs.
 
         Parameters:
-        - data_type (str, optional): The type of metadata to query (e.g., "earthquake"). Defaults to "earthquake".
-        - start_date (str or datetime.date, optional): If provided, sets the start date to the specified value.
-          If string it should be in the format "YYYY-MM-DD". Default is 7 days ago.
-        - end_date (str or datetime.date, optional): If provided, sets the end date to the specified value.
-          If string it should be in the format "YYYY-MM-DD". Default is today.
+        - data_type (str, optional): The type of metadata to query (e.g., "earthquake").
+          Defaults to settings.DATA_TYPE_TO_FETCH.
 
         Returns:
         dict: A dictionary containing base query parameters for the API request.
 
         Raises:
         ValueError: If the provided start_date is not in the supported format "YYYY-MM-DD".
-
-        Example:
-        # >>> base_query_params = get_base_query_params(data_type="earthquake")
-        # >>> print(base_query_params)
-        {'type': 'earthquake', 'startDate': {today}, 'endDate': {a week ago}}
         """
+
         # Extracting parameters with default values if not provided
-        data_type = kwargs.get("data_type", "earthquake")
-        start_date = kwargs.get("start_date")
-        end_date = kwargs.get("end_date")
+        data_type = kwargs.get("data_type", settings.DATA_TYPE_TO_FETCH)
+
+        # get start/end dates according to mode
+        start_date, end_date = self.start_end_dates
 
         # Set base query params
         base_query_kwargs = {"type": data_type}
@@ -138,7 +244,7 @@ class Downloader:
             if date:
                 if is_valid_date(date):
                     if isinstance(date, datetime.date):
-                        date = date.strftime("%Y-%m-%d")
+                        date = date.strftime(definitions.DATE_FORMAT)
                 else:
                     raise ValueError(
                         f"{date_name} needs to be a datetime.date object or string in YYYY-MM-DD format"
@@ -147,118 +253,36 @@ class Downloader:
             else:
                 if date_name == "startDate":
                     date = datetime.date.today() - datetime.timedelta(days=7)
-                    date = date.strftime("%Y-%m-%d")
+                    date = date.strftime(definitions.DATE_FORMAT)
                 elif date_name == "endDate":
-                    date = datetime.date.today().strftime("%Y-%m-%d")
+                    date = datetime.date.today().strftime(definitions.DATE_FORMAT)
 
             base_query_kwargs[date_name] = date
 
         return base_query_kwargs
 
-    @classmethod
-    def get_num_results(cls, num_results: Union[Literal["max"], int]) -> int:
-        """
-        Calculate the maximum number of results based on available API requests.
-
-        Parameters:
-        - num_results (Union[Literal["max"], int]): The desired number of results.
-          If "max" is provided, the maximum possible results based on available API requests are returned.
-
-        Returns:
-        int: The calculated number of results.
-
-        Raises:
-        ValueError: If num_results is an integer less than 1.
-
-        Example:
-        # >>> get_num_results("max")
-        150000  # Assuming 150 remaining requests and MAX_RESULTS_PER_REQUEST is 1000
-
-        # >>> get_num_results(50000)
-        50000  # If 50000 is within the available API requests limit
-
-        # >>> get_num_results(0)
-        ValueError: num_results must be larger than 0
-        """
-        # Validate and handle the "max" case
-        if num_results == "max":
-            return cls._calculate_max_results()
-
-        # Validate and handle integer input
-        if not isinstance(num_results, int) or num_results < 1:
-            raise ValueError("num_results must be an integer greater than 0 or 'max'")
-
-        # Calculate the minimum of num_results and the available API requests
-        return min(num_results, cls._calculate_max_results())
-
-    @staticmethod
-    def _calculate_max_results() -> int:
-        """
-        Calculate the maximum number of results based on available API requests.
-
-        Returns:
-        int: The calculated number of results.
-        """
-        max_results = 0
-
-        # Calculate the total available results based on remaining API requests
-        for _ in settings.API_KEYs:
-            # todo: embed metadata into the process and recalculate
-            pass
-            # remaining_requests = MetadataManager.key_remaining_requests(key)
-            # max_results += remaining_requests * definitions.MAX_RESULTS_PER_REQUEST
-
-        return max_results
-
-    @classmethod
-    def fetch_data(cls, **kwargs):
+    def fetch_data(self, **kwargs) -> list[dict]:
         """
         Fetch metadata from the API.
 
         kwargs:
-        - num_results: str|int (default 'max') - number of results to return. Use 'max' to get the maximum available
-          number of results, taking into account the nuber of results per request and remaining requests for the day
-          Use an int > 0 to limit the number of results
+
         - data_type: str (default "earthquake") - type of metadata points to return
-        - start_date: str|datetime.date|bool (default {7 days ago}) - a date to begin the search from. str must be
-          in YYYY-MM-DD format
-        - end_date: str|datetime.date|bool (default {today}) - a date to end the search to. str must be
-          in YYYY-MM-DD format
-        - offset: int (default 1) - an offset to the returned rows
-        - key: str (default settings.API_KEYs[0]) - a valid api key.
         """
         try:
-            offset = kwargs.get("offset", 1)
-            num_results = cls.get_num_results(kwargs.get("num_results", "max"))
-            base_query_kwargs = cls.get_base_query_params(**kwargs)
-            requests_params = cls.generate_requests_params(
-                total_results=num_results, offset=offset, base_params=base_query_kwargs
+            base_query_kwargs = self.get_base_query_params(**kwargs)
+            requests_params, headers = self.generate_requests_params(
+                base_query_kwargs=base_query_kwargs
             )
-
-            headers = [None] * len(requests_params)
-            #     [
-            #     [{"X-RapidAPI-Key": key, "X-RapidAPI-Host": settings.API_HOST}]
-            #     * MetadataManager.key_remaining_requests(key)
-            #     for key in settings.API_KEYs
-            # ][: len(requests_params)]
 
             with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
                 api_responses = list(
-                    executor.map(cls.get_api_response, requests_params, headers)
+                    executor.map(self.get_api_response, requests_params, headers)
                 )
 
-            # todo: Process the API responses as needed
-            with open(
-                f"{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}_data.json",
-                "w",
-                encoding="utf-8",
-            ) as file:
-                json.dump(api_responses, file)
+            return api_responses
 
         except Exception as error:
-            logging.error(f"An error occurred: {error}")
-            # Handle the error or re-raise it based on your use case
+            logging.error(f"--- error ---\n{error.__traceback__}")
 
-
-if __name__ == "__main__":
-    Downloader.fetch_data()
+        return []
