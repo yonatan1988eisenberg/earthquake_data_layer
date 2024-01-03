@@ -2,7 +2,9 @@ import datetime
 import json
 import logging
 
-from earthquake_data_layer import definitions, settings
+from botocore.exceptions import ClientError
+
+from earthquake_data_layer import definitions, settings, storage
 from earthquake_data_layer.helpers import is_valid_date
 
 
@@ -80,19 +82,39 @@ class Metadata:
         return cls._update_metadata(metadata)
 
     @staticmethod
-    def get_metadate() -> dict:
+    def get_metadate(
+        local: bool = settings.LOCAL_METADATA, bucket: str = settings.AWS_BUCKET_NAME
+    ) -> dict:
         """Fetches the metadata from the file/cloud"""
-        if settings.LOCAL_METADATA:
+        if local:
             try:
                 with open(definitions.METADATA_LOCATION, "r", encoding="utf-8") as file:
                     metadata = json.load(file)
-                return metadata
-            except (FileNotFoundError, json.JSONDecodeError) as e:
+
+            except (FileNotFoundError, json.JSONDecodeError) as error:
                 # Log or handle the exception appropriately
-                print(f"Error reading metadata: {e}")
+                logging.info(
+                    f"Error reading metadata file, returning empty dict: {error}"
+                )
                 return {}
         else:
-            raise NotImplementedError
+            try:
+                connection = storage.Storage()
+                if definitions.METADATA_KEY in connection.list_objects(
+                    bucket, definitions.METADATA_KEY
+                ):
+                    metadata = connection.load_object(
+                        definitions.METADATA_KEY, bucket_name=bucket
+                    )
+                else:
+                    metadata = {}
+            except ClientError as error:
+                logging.info(
+                    f"Error reading metadata file, returning empty dict: {error}"
+                )
+                return {}
+
+        return metadata
 
     @classmethod
     def get_remaining_requests(cls, key: str) -> int:
