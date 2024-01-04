@@ -3,7 +3,7 @@ import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
 from random import choice
-from typing import Literal, Union
+from typing import Literal, Optional, Union
 
 import requests
 
@@ -19,7 +19,7 @@ class Downloader:
 
     def __init__(
         self,
-        metadata_manager: MetadataManager,
+        metadata_manager: Optional[MetadataManager] = None,
         mode: Literal["collection", "update"] = "collection",
     ):
         """
@@ -95,6 +95,7 @@ class Downloader:
         return offset
 
     def key_api2name(self, key: str) -> Union[str, bool]:
+        # todo: move to helpers
         """
         Convert API key to key name.
 

@@ -8,7 +8,7 @@ MAX_REQUESTS_PER_DAY = 150
 
 
 # metadata locations
-METADATA_FILE = "meta.json"
+METADATA_FILE = "metadata.json"
 METADATA_LOCATION = Path(__file__).parent.joinpath(METADATA_FILE)
 METADATA_KEY = "/metadata.json"
 

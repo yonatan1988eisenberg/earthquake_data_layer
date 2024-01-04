@@ -1,4 +1,6 @@
 import datetime
+import random
+import string
 from typing import Union
 
 from earthquake_data_layer import definitions
@@ -17,3 +19,11 @@ def is_valid_date(date: Union[datetime.date, str]):
             return False
 
     return False
+
+
+def generate_data_key(run_id: str):
+    return f"data/raw_data/{definitions.TODAY.strftime('%Y')}/{run_id}_data.parquet"
+
+
+def random_string(n: int):
+    return "".join(random.choices(string.ascii_lowercase, k=n))

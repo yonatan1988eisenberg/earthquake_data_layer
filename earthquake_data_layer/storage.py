@@ -2,13 +2,12 @@ import datetime
 import io
 import logging
 import os
-import random
-import string
 from typing import Optional, Union
 
 import boto3
 from botocore.exceptions import ClientError
 
+from earthquake_data_layer import helpers, settings
 from earthquake_data_layer.settings import (
     AWS_ACCESS_KEY_ID,
     AWS_BUCKET_NAME,
@@ -168,7 +167,9 @@ class Storage:
                 client.upload_file(file_source, bucket_name, key)
             elif isinstance(file_source, bytes):
                 if not key:
-                    random_string = "".join(random.choices(string.ascii_lowercase, k=5))
+                    random_string = helpers.random_string(
+                        settings.RANDOM_STRING_LENGTH_KEY
+                    )
                     key = f"{random_string}_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%m:%S')}"
                 client.upload_fileobj(io.BytesIO(file_source), bucket_name, key)
             logging.info(f"File uploaded successfully: {key}")

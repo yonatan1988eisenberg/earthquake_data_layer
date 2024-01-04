@@ -33,6 +33,13 @@ DATA_TYPE_TO_FETCH = "earthquake"
 # how many requests to leave in each key when collecting
 REQUESTS_TOLERANCE = 0
 
+# metadata
+LOCAL_METADATA = False
+
+# when uploading to storage without a key
+RANDOM_STRING_LENGTH_KEY = 5
+# when processing the responses
+RANDOM_STRING_LENGTH_RESPONSE_ID = 5
 
 # aws
 AWS_S3_ENDPOINT = os.getenv("AWS_S3_ENDPOINT", None)
@@ -40,9 +47,6 @@ AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", None)
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", None)
 AWS_REGION = os.getenv("AWS_REGION", None)
 AWS_BUCKET_NAME = os.getenv("AWS_BUCKET_NAME", None)
-
-# metadata
-LOCAL_METADATA = False
 
 # logging
 LOGLEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
