@@ -230,3 +230,17 @@ class MetadataManager:
         self.metadata["keys"] = keys
 
         return True
+
+    @property
+    def known_columns(self):
+        """
+        Get the known columns from metadata or return default columns.
+
+        Returns:
+        list: List of known columns.
+        """
+        cols = self.metadata.get("known_columns")
+        if not cols:
+            return definitions.SEEN_COLUMNS
+
+        return cols
