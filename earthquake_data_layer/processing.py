@@ -89,7 +89,7 @@ class Preprocess:
             "count": count,
             "data_key": data_key,
             "responses_ids": responses_ids,
-            "columns": str(columns),
+            "columns": columns,
         }
 
         two_d_data = list(itertools.chain.from_iterable(three_d_data))
@@ -105,7 +105,14 @@ class Preprocess:
         mode: Literal["collection", "update"] = "collection",
     ) -> tuple[dict, list[dict], list[dict]]:
         """
-        Preprocess responses.
+        Preprocess responses, where each response is expected to be:
+        response = {
+            "raw_response": response.json(),
+            "metadata": {
+                         "request_params": request_params,
+                         "key_name": key_name,
+                        }
+            }
 
         Parameters:
         - run_id (str): The run ID.
@@ -113,7 +120,24 @@ class Preprocess:
         - mode (Literal["collection", "update"]): Collection mode or update mode.
 
         Returns:
-        tuple: run metadata, responses metadata and data
+        tuple: run metadata, responses metadata and data, where
+
+        run_metadata = {
+            "mode": mode,
+            "count": count,
+            "data_key": data_key,
+            "responses_ids": responses_ids,
+            "columns": columns,
+        }
+
+        responses_metadata = list[{
+            metadata,   # originated from responses["metadata]
+            raw_response, # originated from responses["raw_response] but excludes the data
+            "response_id": response_id,
+            "data_key": data_key,
+        }]
+
+        data is a single list containing all the data from the input responses
         """
         responses_ids = []
         columns = Counter()
