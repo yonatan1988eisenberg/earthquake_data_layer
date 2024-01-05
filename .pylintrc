@@ -113,7 +113,8 @@ disable=
     # I've added from here YE
     use-list-literal,
     consider-alternative-union-syntax,
-    logging-fstring-interpolation
+    logging-fstring-interpolation,
+    use-dict-literal
 
 
 [REPORTS]

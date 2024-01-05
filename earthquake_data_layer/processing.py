@@ -123,18 +123,18 @@ class Preprocess:
         tuple: run metadata, responses metadata and data, where
 
         run_metadata = {
-            "mode": mode,
-            "count": count,
-            "data_key": data_key,
-            "responses_ids": responses_ids,
-            "columns": columns,
+            "mode": str,
+            "count": int,
+            "data_key": str,
+            "responses_ids": list[str],
+            "columns": Counter,
         }
 
         responses_metadata = list[{
-            metadata,   # originated from responses["metadata]
-            raw_response, # originated from responses["raw_response] but excludes the data
-            "response_id": response_id,
-            "data_key": data_key,
+            **metadata: dict,   # originated from responses["metadata]
+            **raw_response: dict, # originated from responses["raw_response] but excludes the data
+            "response_id": str,
+            "data_key": str,
         }]
 
         data is a single list containing all the data from the input responses
