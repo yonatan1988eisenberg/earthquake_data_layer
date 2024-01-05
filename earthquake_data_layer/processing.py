@@ -37,9 +37,7 @@ class Preprocess:
         data = raw_response.pop("data", [])
 
         # Generate response_id
-        response_id = run_id + helpers.random_string(
-            settings.RANDOM_STRING_LENGTH_RESPONSE_ID
-        )
+        response_id = f"{run_id}_{helpers.random_string(settings.RANDOM_STRING_LENGTH_RESPONSE_ID)}"
         responses_ids.append(response_id)
 
         # Process the data
@@ -101,10 +99,11 @@ class Preprocess:
     @classmethod
     def preprocess(
         cls,
-        run_id: str,
         responses: list[dict],
+        run_id: str,
+        data_key,
         mode: Literal["collection", "update"] = "collection",
-    ) -> tuple[list[dict], dict]:
+    ) -> tuple[dict, list[dict], list[dict]]:
         """
         Preprocess responses.
 
@@ -114,12 +113,11 @@ class Preprocess:
         - mode (Literal["collection", "update"]): Collection mode or update mode.
 
         Returns:
-        tuple: Merged data, run metadata.
+        tuple: run metadata, responses metadata and data
         """
         responses_ids = []
         columns = Counter()
         count = 0
-        data_key = helpers.generate_data_key(run_id)
 
         responses_metadata = []
         three_d_data = []
@@ -139,4 +137,4 @@ class Preprocess:
             three_d_data, responses_ids, columns, mode, count, data_key
         )
 
-        return data, run_metadata
+        return run_metadata, responses_metadata, data
