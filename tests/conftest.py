@@ -11,7 +11,7 @@ from moto import mock_s3
 def mock_run_metadata():
     return {
         "mode": "collecting",
-        "count": 1000,
+        "count": 3,
         "data_key": "sample_data_key",
         "responses_ids": ["response1", "response2", "response3"],
         "columns": Counter({"col1": 3, "col2": 3, "col3": 3}),
