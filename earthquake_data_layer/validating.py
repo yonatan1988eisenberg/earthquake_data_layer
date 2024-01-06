@@ -1,9 +1,19 @@
+from abc import ABC, abstractmethod
 from typing import Optional
 
 from earthquake_data_layer import MetadataManager
 
 
-class ColumnsNames:
+class ValidationStep(ABC):
+    name: str
+
+    @classmethod
+    @abstractmethod
+    def execute(cls, **kwargs) -> tuple[str, dict]:
+        pass
+
+
+class ColumnsNames(ABC):
     """
     Verifies all the known columns exist and that there are no new columns.
     """
@@ -47,7 +57,7 @@ class ColumnsNames:
         return cls.name, report
 
 
-class MissingValues:
+class MissingValues(ABC):
     """
     Returns a dictionary {column: number of missing values} or None if there are none.
     """
@@ -95,7 +105,7 @@ class Validate:
     steps: Optional[list] = [ColumnsNames, MissingValues]
 
     @classmethod
-    def __call__(cls, steps: Optional[list] = None, **kwargs):
+    def validate(cls, steps: Optional[list] = None, **kwargs):
         """
         Execute the validation process with specified steps.
 
