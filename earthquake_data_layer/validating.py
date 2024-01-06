@@ -33,15 +33,15 @@ class ColumnsNames:
 
         report = dict()
         new_cols = list()
-        existing_cols = list()
+        known_cols_in_run = list()
         if run_columns:
             for col in run_columns:
                 if col not in known_cols:
                     new_cols.append(col)
                 else:
-                    existing_cols.append(col)
+                    known_cols_in_run.append(col)
 
-        report["missing_columns"] = len(known_cols) - len(existing_cols)
+        report["missing_columns"] = list(set(known_cols).difference(known_cols_in_run))
         report["new_columns"] = new_cols
 
         return cls.name, report

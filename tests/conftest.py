@@ -1,9 +1,21 @@
 # pylint: disable=redefined-outer-name,unused-argument,import-outside-toplevel
 import os
+from collections import Counter
 
 import boto3
 import pytest
 from moto import mock_s3
+
+
+@pytest.fixture
+def mock_run_metadata():
+    return {
+        "mode": "collecting",
+        "count": 1000,
+        "data_key": "sample_data_key",
+        "responses_ids": ["response1", "response2", "response3"],
+        "columns": Counter({"col1": 3, "col2": 3, "col3": 3}),
+    }
 
 
 @pytest.fixture
@@ -16,6 +28,7 @@ def blank_metadata():
             "collection_start_date": False,
         },
         "keys": {},
+        "known_columns": ["col1", "col2", "col3"],
     }
 
 
