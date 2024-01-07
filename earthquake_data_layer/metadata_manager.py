@@ -112,8 +112,12 @@ class MetadataManager:
         """
 
         collection_dates = self.metadata.get("collection_dates", {})
-        start_date = collection_dates.get("start_date", False)
-        end_date = collection_dates.get("end_date", False)
+        start_date = collection_dates.get(
+            "start_date", definitions.EARLIEST_EARTHQUAKE_DATE
+        )
+        end_date = collection_dates.get(
+            "end_date", definitions.YESTERDAY.strftime(definitions.DATE_FORMAT)
+        )
         offset = collection_dates.get("offset", 1)
         collection_start_date = collection_dates.get("collection_start_date", False)
         return start_date, end_date, offset, collection_start_date

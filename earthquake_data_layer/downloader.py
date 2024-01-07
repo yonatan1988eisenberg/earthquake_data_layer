@@ -253,10 +253,10 @@ class Downloader:
             # pylint: disable=else-if-used
             else:
                 if date_name == "startDate":
-                    date = datetime.date.today() - datetime.timedelta(days=7)
+                    date = definitions.TODAY - datetime.timedelta(days=7)
                     date = date.strftime(definitions.DATE_FORMAT)
                 elif date_name == "endDate":
-                    date = datetime.date.today().strftime(definitions.DATE_FORMAT)
+                    date = definitions.TODAY.strftime(definitions.DATE_FORMAT)
 
             base_query_kwargs[date_name] = date
 
