@@ -1,10 +1,11 @@
 # pylint: disable=redefined-outer-name, use-a-generator
+import datetime
 from collections import Counter
 from copy import deepcopy
 
 import pytest
 
-from earthquake_data_layer import Preprocess
+from earthquake_data_layer import Preprocess, definitions
 
 
 @pytest.fixture
@@ -23,12 +24,18 @@ def num_cols():
 
 @pytest.fixture
 def sample_response(num_rows, num_cols):
+    mock_data = list()
+    for row in range(num_rows):
+        row_data = dict()
+        for col in range(num_cols):
+            row_data[f"row{row}_col{col}"] = row * col
+        row_data["date"] = definitions.TODAY.strftime(definitions.DATE_FORMAT)
+
+        mock_data.append(row_data)
+
     return {
         "raw_response": {
-            "data": [
-                {f"row{row}_col{col}": row * col for col in range(num_cols)}
-                for row in range(num_rows)
-            ],
+            "data": mock_data,
             "other_key": "other_value",
         },
         "metadata": {
@@ -42,14 +49,18 @@ def sample_response(num_rows, num_cols):
 
 @pytest.fixture
 def inverted_sample_response(num_rows, num_cols):
-    num_cols, num_rows = num_rows, num_cols
+    mock_data = list()
+    for row in range(num_cols):
+        row_data = dict()
+        for col in range(num_rows):
+            row_data[f"row{row}_col{col}"] = row * col
+        row_data["date"] = definitions.TODAY.strftime(definitions.DATE_FORMAT)
+
+        mock_data.append(row_data)
 
     return {
         "raw_response": {
-            "data": [
-                {f"row{row}_col{col}": row * col for col in range(num_cols)}
-                for row in range(num_rows)
-            ],
+            "data": mock_data,
             "other_key": "other_value",
         },
         "metadata": {
@@ -61,12 +72,25 @@ def inverted_sample_response(num_rows, num_cols):
     }
 
 
+@pytest.fixture
+def mock_dates_counter(num_rows, num_cols):
+    today_str = definitions.TODAY.strftime(definitions.DATE_FORMAT)
+    tomorrow_str = (definitions.TODAY + datetime.timedelta(days=1)).strftime(
+        definitions.DATE_FORMAT
+    )
+    row_date = Counter()
+    row_date.update([today_str] * num_rows + [tomorrow_str] * num_cols)
+
+    return row_date
+
+
 def test_process_response(sample_response, num_rows, num_cols):
     run_id = "sample_run"
     data_key = "sample_data_key"
     responses_ids = []
     count = 0
     columns = Counter()
+    row_dates = Counter()
 
     (
         metadata,
@@ -74,8 +98,9 @@ def test_process_response(sample_response, num_rows, num_cols):
         responses_ids,
         count,
         columns,
+        row_dates,
     ) = Preprocess.process_response(
-        sample_response, run_id, data_key, responses_ids, count, columns
+        sample_response, run_id, data_key, responses_ids, count, columns, row_dates
     )
 
     assert "response_id" in metadata
@@ -88,8 +113,23 @@ def test_process_response(sample_response, num_rows, num_cols):
             for row in range(num_rows)
             for col in range(num_cols)
         ]
+        + [columns["date"] == num_rows]
     )
     assert len(processed_data) == num_rows
+    expected_row_dates = Counter()
+    expected_row_dates.update(
+        [definitions.TODAY.strftime(definitions.DATE_FORMAT)] * num_rows
+    )
+    assert row_dates == expected_row_dates
+
+
+def test_get_next_run_dates(mock_dates_counter, num_rows):
+
+    result = Preprocess.get_next_run_dates(mock_dates_counter)
+    assert result == {
+        "earliest_date": definitions.TODAY.strftime(definitions.DATE_FORMAT),
+        "offset": num_rows,
+    }
 
 
 def test_bundle(sample_response, inverted_sample_response, num_rows, num_cols):
@@ -98,6 +138,7 @@ def test_bundle(sample_response, inverted_sample_response, num_rows, num_cols):
     responses_ids = []
     count = 0
     columns = Counter()
+    row_dates = Counter()
     mode = "collection"
     double_col_names = min(num_rows, num_cols)
 
@@ -106,19 +147,34 @@ def test_bundle(sample_response, inverted_sample_response, num_rows, num_cols):
     responses_metadata = []
     three_d_data = []
     for response in responses:
-        metadata, data, responses_ids, count, columns = Preprocess.process_response(
-            response, run_id, data_key, responses_ids, count, columns
+        (
+            metadata,
+            data,
+            responses_ids,
+            count,
+            columns,
+            row_dates,
+        ) = Preprocess.process_response(
+            response, run_id, data_key, responses_ids, count, columns, row_dates
         )
         responses_metadata.append(metadata)
         three_d_data.append(data)
 
+    next_run_dates = Preprocess.get_next_run_dates(row_dates)
+
     data, run_metadata = Preprocess.bundle(
-        three_d_data, responses_ids, columns, mode, count, data_key
+        three_d_data, responses_ids, columns, next_run_dates, mode, count, data_key
     )
+
+    expected_nex_run_dates = {
+        "earliest_date": definitions.TODAY.strftime(definitions.DATE_FORMAT),
+        "offset": num_rows + num_cols,
+    }
 
     assert run_metadata["mode"] == mode
     assert run_metadata["count"] == count
     assert run_metadata["data_key"] == data_key
+    assert run_metadata["next_run_dates"] == expected_nex_run_dates
     assert len(run_metadata["responses_ids"]) == len(responses)
     # each row has different columns, we expect that some will be shared but some woun't
     assert all(
@@ -130,8 +186,9 @@ def test_bundle(sample_response, inverted_sample_response, num_rows, num_cols):
             for col in range(num_cols)
         ]
     )
-    # we also expect that the columns response id will be share among all the rows
+    # we also expect that the columns response id and date will be share among all the rows
     assert columns["response_id"] == count
+    assert columns["date"] == count
     assert data == three_d_data[0] + three_d_data[1]
 
 
@@ -144,7 +201,7 @@ def verify_row(row: dict, data: list[dict]):
     return False
 
 
-def test_preprocess(sample_response, inverted_sample_response):
+def test_preprocess(sample_response, inverted_sample_response, num_rows, num_cols):
     responses = [sample_response, inverted_sample_response]
     run_id = "sample_run"
     data_key = "sample_data_key"
@@ -159,6 +216,12 @@ def test_preprocess(sample_response, inverted_sample_response):
     run_metadata, responses_metadata, data = Preprocess.preprocess(
         responses, run_id, data_key
     )
+    expected_nex_run_dates = {
+        "earliest_date": definitions.TODAY.strftime(definitions.DATE_FORMAT),
+        "offset": num_rows + num_cols,
+    }
+
+    assert run_metadata["next_run_dates"] == expected_nex_run_dates
     assert len(run_metadata["responses_ids"]) == len(responses)
     assert run_metadata["count"] == len(expected_data)
     assert all(
