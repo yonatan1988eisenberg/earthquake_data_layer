@@ -27,6 +27,36 @@ class Storage:
 
     Example:
     storage.upload_file(file_source='example.txt', object_name='path/to/example.txt')
+
+    Attributes:
+    - aws_access_key_id (str): AWS access key ID.
+    - aws_secret_access_key (str): AWS secret access key.
+    - endpoint_url (str): Custom endpoint URL for S3.
+    - region_name (str): AWS region name.
+    - client (boto3.client): S3 client instance.
+
+    Methods:
+    - bucket_exists(bucket_name: str, client: Optional[boto3.client] = None, create: bool = False) -> bool:
+        Checks if an S3 bucket exists.
+    - list_objects(bucket_name: str = AWS_BUCKET_NAME, prefix: Optional[str] = "") -> list[str]:
+        List all objects in an S3 bucket.
+    - remove_object(key: str, bucket_name: str = AWS_BUCKET_NAME, client: Optional[boto3.client] = None) -> bool:
+        Remove an object from an S3 bucket.
+    - save_object(file_source: Union[str, bytes], key: Optional[str] = None,
+                  bucket_name: str = AWS_BUCKET_NAME, client: Optional[boto3.client] = None) -> bool:
+        Save an object to an S3 bucket.
+    - load_object(key: str, return_as_io: bool = True, destination_path: Optional[str] = None,
+                  bucket_name: str = AWS_BUCKET_NAME, client: Optional[boto3.client] = None) -> Optional[Union[bool, io.BytesIO]]:
+        Load an object from an S3 bucket.
+
+    Example:
+    storage = Storage()
+    objects_list = storage.list_objects('my_bucket', prefix='path/to/')
+    for obj_key in objects_list:
+        storage.load_object(obj_key, destination_path='local_path/to_save', return_as_io=False)
+
+    Note:
+    The class can be initialized with custom AWS credentials and endpoint URL.
     """
 
     def __init__(self, **kwargs):

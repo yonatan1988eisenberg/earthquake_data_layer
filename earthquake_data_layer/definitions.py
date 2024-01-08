@@ -2,6 +2,7 @@
 import datetime
 from pathlib import Path
 
+# API
 API_URL = "https://everyearthquake.p.rapidapi.com/earthquakesByDate"
 MAX_RESULTS_PER_REQUEST = 1000
 MAX_REQUESTS_PER_DAY = 150
