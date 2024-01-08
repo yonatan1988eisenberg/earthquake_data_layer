@@ -5,6 +5,8 @@ from earthquake_data_layer import MetadataManager
 
 
 class ValidationStep(ABC):
+    """a scheme for a validation step"""
+
     name: str
 
     @classmethod

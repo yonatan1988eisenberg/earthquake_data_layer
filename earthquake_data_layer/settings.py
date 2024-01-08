@@ -29,9 +29,10 @@ API_HOST = os.getenv("API_HOST", None)
 API_KEYs = get_api_keys()
 NUM_REQUESTS_FOR_UPDATE = 1
 UPDATE_TIME_DELTA_DAYS = 7
+EARLIEST_EARTHQUAKE_DATE = "1900-01-01"
 DATA_TYPE_TO_FETCH = "earthquake"
 # how many requests to leave in each key when collecting
-REQUESTS_TOLERANCE = 0
+REQUESTS_TOLERANCE = 10
 
 # metadata
 LOCAL_METADATA = False

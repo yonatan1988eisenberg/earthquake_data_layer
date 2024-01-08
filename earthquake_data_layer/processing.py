@@ -8,6 +8,40 @@ from earthquake_data_layer.helpers import is_valid_date
 
 
 class Preprocess:
+    """
+    A class for preprocessing earthquake data responses.
+
+    The class responsibilities include processing individual responses, aggregating metadata and processed data,
+    and calculating information for the next run. It facilitates the preparation of data and metadata for
+    further analysis.
+
+    Methods:
+    - process_response(cls, response: dict, run_id: str, data_key: str, responses_ids: list[str],
+      count: int, columns: Counter, row_dates: Counter) -> tuple[dict, list[dict], list[str], int, Counter, Counter]:
+      Process a single earthquake data response and return metadata, processed data, and updated counters.
+    - get_next_run_dates(cls, row_dates: Counter) -> dict:
+      Calculate the earliest date and offset for the next run based on the provided Counter.
+    - bundle(cls, three_d_data: list[list[dict]], responses_ids: list[str], columns: Counter,
+      next_run_dates: dict, mode: Literal["collection", "update"], count: int, data_key: str) -> tuple[list[dict], dict]:
+      Bundle processed data and generate the run's metadata.
+    - preprocess(cls, responses: list[dict], run_id: str, data_key,
+      mode: Literal["collection", "update"] = "collection") -> tuple[dict, list[dict], list[dict]]:
+      Preprocess responses, agglomerate the data, and generate responses' metadata and run's metadata.
+
+    Example:
+    # >>> responses = [{"raw_response": response.json(), "metadata": {"request_params": params, "key_name": key}}]
+    # >>> run_id = "2023-01-01_12-30-45"
+    # >>> data_key = "data_key_123"
+    # >>> mode = "collection"
+    # >>> manager = Preprocess()
+    # >>> run_metadata, responses_metadata, data = manager.preprocess(responses, run_id, data_key, mode)
+    # >>> print(f"Run Metadata: {run_metadata}, Responses Metadata: {responses_metadata}, Data: {data}")
+    # Run Metadata: {'mode': 'collection', 'count': 10, 'data_key': 'data_key_123', 'responses_ids': ['run_id_123', ...],
+    #               'columns': Counter({'column1': 5, 'column2': 3, ...}), 'next_run_dates': {'earliest_date': '2023-01-02', 'offset': 5}},
+    # Responses Metadata: [{'request_params': {'param1': 'value1'}, 'key_name': 'key1', 'response_id': 'run_id_123', 'data_key': 'data_key_123'}, ...],
+    # Data: [{'column1': 'value1', 'column2': 'value2', 'response_id': 'run_id_123'}, ...]
+    """
+
     @classmethod
     def process_response(
         cls,
@@ -20,16 +54,18 @@ class Preprocess:
         row_dates: Counter,
     ) -> tuple[dict, list[dict], list[str], int, Counter, Counter]:
         """
-        Process a single response.
+        Process a single earthquake data response.
 
         Parameters:
         - response (dict): The response dictionary.
-        - run_id (str): The run ID.
-        - data_key (str): The data key.
-        - responses_ids (list): List to store response IDs.
-        - count (int): Current count.
-        - columns (Counter): Counter for columns.
-        - row_dates (Counter): Counter for row dates.
+        - run_id (str): The run ID. Used to generate the response_id, added to the response's metadata.
+        - data_key (str): The data key, where the data from this response will be saved. Added to the
+        response's metadata.
+        - responses_ids (list): List to store response IDs. Added to the run's metadata.
+        - count (int): Current count. Used for validating and added to the run's metadata.
+        - columns (Counter): Counter for columns. Used to validate data scheme.
+        - row_dates (Counter): Counter for row dates, updated during processing. Used to calculate the next run's
+        end_date and offset.
 
         Returns:
         tuple: Metadata, processed data, updated response IDs, updated count, updated columns, updated row dates.
@@ -84,7 +120,7 @@ class Preprocess:
     @classmethod
     def get_next_run_dates(cls, row_dates: Counter) -> dict:
         """
-        Calculate the earliest date and offset for the next run.
+        Calculate the earliest date and offset for the next run based on the provided Counter.
 
         Parameters:
         - row_dates (Counter): Counter for row dates.
@@ -110,7 +146,7 @@ class Preprocess:
         data_key: str,
     ) -> tuple[list[dict], dict]:
         """
-        Bundle metadata, processed data, and other information.
+        Bundle processed data and generates the run's metadata.
 
         Parameters:
         - three_d_data (list): List of processed data.
@@ -147,24 +183,23 @@ class Preprocess:
         mode: Literal["collection", "update"] = "collection",
     ) -> tuple[dict, list[dict], list[dict]]:
         """
-        Preprocess responses, where each response is expected to be:
-        response = {
-            "raw_response": response.json(),
-            "metadata": {
-                         "request_params": request_params,
-                         "key_name": key_name,
-                        }
-            }
-
+        Preprocess responses, agglomerate the data and generates the responses' metadata and run's metadata.
         Parameters:
         - run_id (str): The run ID.
-        - responses (list): List of response dictionaries.
+        - responses (list): List of response dictionaries with the structure:
+          {
+              "raw_response": response.json(),
+              "metadata": {
+                  "request_params": request_params,
+                  "key_name": key_name,
+              }
+          }
         - mode (Literal["collection", "update"]): Collection mode or update mode.
 
         Returns:
         tuple: run metadata, responses metadata and data, where
 
-        run_metadata = {
+        run_metadata: {
             "mode": str,
             "count": int,
             "data_key": str,
@@ -172,15 +207,16 @@ class Preprocess:
             "columns": Counter,
         }
 
-        responses_metadata = list[{
+        responses_metadata: list[{
             **metadata: dict,   # originated from responses["metadata]
             **raw_response: dict, # originated from responses["raw_response] but excludes the data
             "response_id": str,
             "data_key": str,
         }]
 
-        data is a single list containing all the data from the input responses
+        data is a single list containing all the data from the input responses["raw_response]["data"]
         """
+
         responses_ids = []
         columns = Counter()
         row_dates = Counter()

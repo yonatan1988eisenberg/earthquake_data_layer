@@ -205,7 +205,7 @@ class Storage:
             client = self.client
 
         if len(self.list_objects(bucket_name, key)) == 0:
-            raise ValueError(f"no object found under the key {key}")
+            raise FileNotFoundError(f"no object found under the key {key}")
 
         try:
             if return_as_io:

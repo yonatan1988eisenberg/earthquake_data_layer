@@ -78,5 +78,5 @@ def test_loading_existing_and_nonexistent_objects(storage, test_bucket):
     # Test loading a non-existing object
     try:
         storage.load_object("nonexistent-file", bucket_name=test_bucket)
-    except ValueError:
+    except FileNotFoundError:
         assert True

@@ -10,9 +10,49 @@ from earthquake_data_layer.helpers import is_valid_date
 
 
 class MetadataManager:
-    """A class for managing metadata related to earthquake data."""
+    """
+    A class for managing metadata related to earthquake data.
+
+    The class responsibilities include fetching, updating, and saving metadata.
+    It provides methods for retrieving information such as collection dates,
+    remaining requests for API keys, and updating these values.
+
+    Attributes:
+    - local (bool): Flag indicating whether to use local storage (default is settings.LOCAL_METADATA).
+    - bucket (str): The AWS S3 bucket name (default is settings.AWS_BUCKET_NAME).
+    - metadata (dict): The metadata dictionary containing information about collection dates,
+      API keys, and other relevant details.
+
+    Methods:
+    - __init__(self, metadata: Optional[dict] = None, **kwargs): Class constructor, initializes the MetadataManager.
+    - get_metadata(self) -> dict: Fetches metadata from the file or cloud storage.
+    - _save_metadata(self) -> bool: Updates metadata with the provided dictionary and saves it.
+    - collection_dates(self) -> tuple: Retrieves the latest collection dates from the metadata file.
+    - update_collection_dates(self, save: bool = False, **kwargs) -> Union[bool, dict]: Updates collection dates in
+    the metadata file.
+    - key_remaining_requests(self, key: str) -> int: Retrieves today's remaining requests for the specified API key.
+    - update_key_remaining_requests(self, key: str, requests: int) -> Union[bool, dict]: Updates today's remaining
+    requests for the specified API key.
+    - known_columns(self) -> list: Retrieves known columns from metadata or returns default columns.
+
+    Example:
+    # >>> manager = MetadataManager()
+    # >>> start_date, end_date, offset, collection_start_date = manager.collection_dates()
+    # >>> print(f"Start Date: {start_date}, End Date: {end_date}, Offset: {offset}, Collection Start Date:
+    {collection_start_date}")
+    # Start Date: 2023-01-01, End Date: 2023-01-02, Offset: 1, Collection Start Date: False
+    """
 
     def __init__(self, metadata: Optional[dict] = None, **kwargs):
+        """
+        Initialize a MetadataManager instance.
+
+        Parameters:
+        - metadata (dict, optional): The initial metadata dictionary. Defaults to None which triggers a get_metadate
+        method.
+        - local (bool): Flag indicating whether to use local storage. Defaults to settings.LOCAL_METADATA.
+        - bucket (str): The AWS S3 bucket name. Defaults to settings.AWS_BUCKET_NAME.
+        """
 
         self.local = kwargs.get("local", settings.LOCAL_METADATA)
         self.bucket = kwargs.get("bucket", settings.AWS_BUCKET_NAME)
@@ -24,10 +64,6 @@ class MetadataManager:
     def get_metadate(self) -> dict:
         """
         Fetch metadata from the file or cloud storage.
-
-        Parameters:
-        - local (bool): Flag indicating whether to use local storage (default is settings.LOCAL_METADATA).
-        - bucket (str): The AWS S3 bucket name (default is settings.AWS_BUCKET_NAME).
 
         Returns:
         dict: The metadata dictionary.
@@ -68,11 +104,6 @@ class MetadataManager:
         """
         Update metadata with the provided dictionary.
 
-        Parameters:
-        - metadata (dict): The metadata dictionary to be updated.
-        - local (bool): Flag indicating whether to use local storage (default is settings.LOCAL_METADATA).
-        - bucket (str): The AWS S3 bucket name (default is settings.AWS_BUCKET_NAME).
-
         Returns:
         bool: True if the update is successful, False otherwise.
         """
@@ -104,16 +135,13 @@ class MetadataManager:
         """
         Get the latest collection dates from the metadata file.
 
-        Parameters:
-        - metadata (dict, optional): The metadata dictionary (default is None, and it will be fetched if not provided).
-
         Returns:
         tuple: A tuple containing start_date, end_date, offset, and collection_start_date.
         """
 
         collection_dates = self.metadata.get("collection_dates", {})
         start_date = collection_dates.get(
-            "start_date", definitions.EARLIEST_EARTHQUAKE_DATE
+            "start_date", settings.EARLIEST_EARTHQUAKE_DATE
         )
         end_date = collection_dates.get(
             "end_date", definitions.YESTERDAY.strftime(definitions.DATE_FORMAT)
@@ -129,15 +157,14 @@ class MetadataManager:
         Update the collection dates in the metadata file.
 
         Parameters:
-        - metadata (dict, optional): The metadata dictionary (default is None, and it will be fetched if not provided).
-        - upload (bool): Flag indicating whether to upload the updated metadata (default is False).
+        - save (bool): Flag indicating whether to upload the updated metadata. Defaults to False.
         - kwargs: Keyword arguments for start_date, end_date, offset, and collection_start_date.
 
         Returns:
         bool or dict: True if the update is successful, False otherwise, or the updated metadata.
 
         Raises:
-        ValueError: If date values are not in the expected format.
+        ValueError: If date values are not in the expected format (default definitions.DATE_FORMAT).
         """
         start_date = kwargs.get("start_date")
         end_date = kwargs.get("end_date")
@@ -179,7 +206,6 @@ class MetadataManager:
 
         Parameters:
         - key (str): The API key for which to retrieve remaining requests.
-        - metadata (dict, optional): The metadata dictionary (default is None, and it will be fetched if not provided).
 
         Returns:
         int: The remaining number of requests allowed for the specified key today.
@@ -219,8 +245,6 @@ class MetadataManager:
         Parameters:
         - key (str): The API key for which to update remaining requests.
         - requests (int): The new remaining number of requests.
-        - metadata (dict, optional): The metadata dictionary (default is None, and it will be fetched if not provided).
-        - upload (bool): Flag indicating whether to upload the updated metadata (default is False).
 
         Returns:
         bool or dict: True if the update is successful, False otherwise, or the updated metadata.
@@ -245,6 +269,7 @@ class MetadataManager:
         Returns:
         list: List of known columns.
         """
+
         cols = self.metadata.get("known_columns")
         if not cols:
             return definitions.SEEN_COLUMNS

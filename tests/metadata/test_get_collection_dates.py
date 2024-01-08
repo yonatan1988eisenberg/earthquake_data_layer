@@ -1,7 +1,7 @@
 from copy import deepcopy
 from unittest.mock import patch
 
-from earthquake_data_layer import MetadataManager, definitions
+from earthquake_data_layer import MetadataManager, definitions, settings
 
 
 def test_get_collection_dates_default():
@@ -14,7 +14,7 @@ def test_get_collection_dates_default():
         collection_start_date,
     ) = metadata_manager.collection_dates
 
-    assert start_date == definitions.EARLIEST_EARTHQUAKE_DATE
+    assert start_date == settings.EARLIEST_EARTHQUAKE_DATE
     assert end_date == definitions.YESTERDAY.strftime(definitions.DATE_FORMAT)
     assert offset == 1
     assert collection_start_date is False

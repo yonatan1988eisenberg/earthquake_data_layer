@@ -2,19 +2,45 @@ import datetime
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
-from random import choice
 from typing import Literal, Optional, Union
 
 import requests
 
 from earthquake_data_layer import definitions, settings
-from earthquake_data_layer.helpers import is_valid_date
+from earthquake_data_layer.helpers import is_valid_date, key_api2name
 from earthquake_data_layer.metadata_manager import MetadataManager
 
 
 class Downloader:
     """
     A class for downloading data from an API.
+
+    This class handles the retrieval of data from an API, managing API keys, generating request parameters,
+    and executing concurrent requests for efficient data collection.
+
+    Attributes:
+    - metadata_manager (Optional[MetadataManager]): An instance of MetadataManager for managing metadata.
+    - mode (Literal["collection", "update"]): The mode of the downloader ("collection" or "update").
+
+    Properties:
+    - keys_metadata: Property to get metadata for API keys.
+    - start_end_dates: Property to get start and end dates based on the mode.
+    - offset: Property to get the offset based on the mode.
+
+    Methods:
+    - get_api_response(request_params: dict, headers: dict, url: str = definitions.API_URL) -> dict:
+      Send a GET request to the API and return the JSON response.
+    - generate_requests_params(self, **kwargs) -> tuple[list[dict[str, Union[int, str]]], list[dict[str, str]]]:
+      Generate a list of request parameters and headers based on the specified inputs.
+    - get_base_query_params(self, **kwargs) -> dict: Generate base query parameters for an API request.
+    - fetch_data(self, **kwargs) -> list[dict]: Fetch metadata from the API.
+
+    Example:
+    # >>> metadata_manager = MetadataManager()
+    # >>> downloader = Downloader(metadata_manager, mode="collection")
+    # >>> data = downloader.fetch_data(data_type="earthquake")
+    # >>> print(f"Downloaded data: {data}")
+    # Downloaded data: [{'raw_response': {...}, 'metadata': {'request_params': {...}, 'key_name': 'key1'}}, ...]
     """
 
     def __init__(
@@ -40,7 +66,8 @@ class Downloader:
         Property to get metadata for API keys.
 
         Returns:
-        Dict[str, Tuple[str, int]]: A dictionary with key names as keys and tuples of API keys and remaining requests as values.
+        Dict[str, Tuple[str, int]]: A dictionary with key names as keys and tuples of API keys and remaining
+        requests as values.
         """
 
         keys_metadata = dict()
@@ -104,36 +131,9 @@ class Downloader:
 
         return offset
 
-    def key_api2name(self, key: str) -> Union[str, bool]:
-        # todo: move to helpers
-        """
-        Convert API key to key name.
-
-        Parameters:
-        - key (str): The API key.
-
-        Returns:
-        str: The corresponding key name.
-        """
-        candidates = [
-            key_name
-            for key_name, api_key in settings.API_KEYs.items()
-            if api_key == key
-        ]
-        match len(candidates):
-            case 1:
-                return next(iter(candidates))
-            case 0:
-                return False
-            case _:
-                rand_candidate = choice(candidates)
-                logging.info(
-                    f"more than one API name matches the key, returning a random choice - {rand_candidate}"
-                )
-                return rand_candidate
-
+    @staticmethod
     def get_api_response(
-        self, request_params: dict, headers: dict, url: str = definitions.API_URL
+        request_params: dict, headers: dict, url: str = definitions.API_URL
     ) -> dict:
         """
         Send a GET request to the API and return the JSON response.
@@ -155,7 +155,7 @@ class Downloader:
                 "raw_response": response.json(),
                 "metadata": {
                     "request_params": request_params,
-                    "key_name": self.key_api2name(headers.get("X-RapidAPI-Key")),
+                    "key_name": key_api2name(headers.get("X-RapidAPI-Key")),
                 },
             }
 
