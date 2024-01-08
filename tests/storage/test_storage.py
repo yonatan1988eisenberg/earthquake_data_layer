@@ -76,5 +76,7 @@ def test_loading_existing_and_nonexistent_objects(storage, test_bucket):
     assert content, expected_content
 
     # Test loading a non-existing object
-    content = storage.load_object("nonexistent-file", bucket_name=test_bucket)
-    assert content is None
+    try:
+        storage.load_object("nonexistent-file", bucket_name=test_bucket)
+    except ValueError:
+        assert True

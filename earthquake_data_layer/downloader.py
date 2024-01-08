@@ -43,14 +43,24 @@ class Downloader:
         Dict[str, Tuple[str, int]]: A dictionary with key names as keys and tuples of API keys and remaining requests as values.
         """
 
-        return {
-            key_name: (
-                api_key,
-                self.metadata_manager.key_remaining_requests(key_name)
-                - settings.REQUESTS_TOLERANCE,
-            )
-            for key_name, api_key in settings.API_KEYs.items()
-        }
+        keys_metadata = dict()
+        for key_name, api_key in settings.API_KEYs.items():
+            remaining_requests = 0
+            if self.mode == "collection":
+                remaining_requests = max(
+                    0,
+                    self.metadata_manager.key_remaining_requests(key_name)
+                    - settings.REQUESTS_TOLERANCE,
+                )
+            elif self.mode == "update":
+                remaining_requests = min(
+                    settings.NUM_REQUESTS_FOR_UPDATE,
+                    self.metadata_manager.key_remaining_requests(key_name),
+                )
+
+            keys_metadata[key_name] = (api_key, remaining_requests)
+
+        return keys_metadata
 
     @property
     def start_end_dates(self) -> tuple[Union[str, None], Union[str, None]]:

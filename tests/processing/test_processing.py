@@ -29,7 +29,7 @@ def sample_response(num_rows, num_cols):
         row_data = dict()
         for col in range(num_cols):
             row_data[f"row{row}_col{col}"] = row * col
-        row_data["date"] = definitions.TODAY.strftime(definitions.DATE_FORMAT)
+        row_data["date"] = definitions.TODAY.strftime(definitions.EXPECTED_DATE_FORMAT)
 
         mock_data.append(row_data)
 
@@ -54,7 +54,7 @@ def inverted_sample_response(num_rows, num_cols):
         row_data = dict()
         for col in range(num_rows):
             row_data[f"row{row}_col{col}"] = row * col
-        row_data["date"] = definitions.TODAY.strftime(definitions.DATE_FORMAT)
+        row_data["date"] = definitions.TODAY.strftime(definitions.EXPECTED_DATE_FORMAT)
 
         mock_data.append(row_data)
 

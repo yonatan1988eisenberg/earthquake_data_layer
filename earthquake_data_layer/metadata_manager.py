@@ -145,6 +145,8 @@ class MetadataManager:
         collection_start_date = kwargs.get("collection_start_date")
 
         collection_dates = self.metadata.get("collection_dates")
+        if not collection_dates:
+            collection_dates = dict()
 
         # update dates
         for date_name, date in zip(

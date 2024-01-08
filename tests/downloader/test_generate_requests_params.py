@@ -6,21 +6,23 @@ from earthquake_data_layer import Downloader, MetadataManager, definitions, sett
 
 def test_generate_requests_params_collection(blank_metadata):
 
-    useable_requests = 100
-
+    remaining_requests = 100
     mock_metadata = deepcopy(blank_metadata)
     mock_metadata["keys"] = {
-        "key1": {definitions.TODAY.strftime(definitions.DATE_FORMAT): useable_requests},
+        "key1": {
+            definitions.TODAY.strftime(definitions.DATE_FORMAT): remaining_requests
+        },
         "key2": {definitions.TODAY.strftime(definitions.DATE_FORMAT): 0},
     }
 
     downloader = Downloader(metadata_manager=MetadataManager(mock_metadata))
     with patch.object(settings, "API_KEYs", {"key1": "api_key1", "key2": "api_key2"}):
         requests_params, headers = downloader.generate_requests_params()
-        assert (
-            len(requests_params) == useable_requests - settings.REQUESTS_TOLERANCE
+
+        assert len(requests_params) == max(
+            0, remaining_requests - settings.REQUESTS_TOLERANCE
         )  # Assuming useable_requests remaining requests for key1
-        assert len(headers) == useable_requests - settings.REQUESTS_TOLERANCE
+        assert len(headers) == max(0, remaining_requests - settings.REQUESTS_TOLERANCE)
 
     offset = blank_metadata["collection_dates"]["offset"] or 1
     expected_request_params = [
@@ -42,11 +44,13 @@ def test_generate_requests_params_collection(blank_metadata):
 
 def test_generate_requests_params_update(blank_metadata):
 
-    useable_requests = 100
+    remaining_requests = 100
 
     mock_metadata = deepcopy(blank_metadata)
     mock_metadata["keys"] = {
-        "key1": {definitions.TODAY.strftime(definitions.DATE_FORMAT): useable_requests},
+        "key1": {
+            definitions.TODAY.strftime(definitions.DATE_FORMAT): remaining_requests
+        },
         "key2": {definitions.TODAY.strftime(definitions.DATE_FORMAT): 0},
     }
 
