@@ -88,6 +88,8 @@ class Storage:
             )
         self.client = client
 
+        settings.logger.info("initiated Storage")
+
     def bucket_exists(
         self,
         bucket_name: str,
@@ -105,23 +107,26 @@ class Storage:
         Returns:
         - bool: True if the bucket exists, False otherwise.
         """
+
         if not client:
             client = self.client
 
         try:
             client.head_bucket(Bucket=bucket_name)
+            settings.logger.info(f"The bucket {bucket_name} exists")
             return True
         except ClientError as error:
             if error.response["Error"]["Code"] == "404":
                 if create:
                     try:
+                        settings.logger.info(f"Creating the bucket {bucket_name}")
                         client.create_bucket(Bucket=bucket_name)
                         return True
                     except Exception as inner_error:
                         logging.error(inner_error)
 
                 return False
-            logging.error(f"Error checking bucket existence: {error}")
+            settings.logger.error(f"Error checking bucket existence: {error}")
             return False
 
     def list_objects(
@@ -137,6 +142,9 @@ class Storage:
         Returns:
         - List[str]: List of object keys.
         """
+
+        settings.logger.debug(f"listing objects with prefix {prefix}")
+
         response = self.client.list_objects(Bucket=bucket_name, Prefix=prefix)
         return [obj["Key"] for obj in response.get("Contents", [])]
 
@@ -162,10 +170,10 @@ class Storage:
 
         try:
             client.delete_object(Bucket=bucket_name, Key=key)
-            logging.info(f"Object removed successfully: {key}")
+            settings.logger.info(f"Object removed successfully: {key}")
             return True
         except ClientError as e:
-            logging.error(f"Error removing object: {e}")
+            settings.logger.error(f"Error removing object: {e}")
             return False
 
     def save_object(
@@ -202,9 +210,9 @@ class Storage:
                     )
                     key = f"{random_string}_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%m:%S')}"
                 client.upload_fileobj(io.BytesIO(file_source), bucket_name, key)
-            logging.info(f"File uploaded successfully: {key}")
+            settings.logger.info(f"File uploaded successfully: {key}")
         except ClientError as e:
-            logging.error(f"Error uploading file: {e}")
+            settings.logger.error(f"Error uploading file: {e}")
             return False
         return True
 
@@ -242,16 +250,18 @@ class Storage:
                 file_content = io.BytesIO()
                 client.download_fileobj(bucket_name, key, file_content)
                 file_content.seek(0)
-                logging.info(f"File downloaded successfully: {key}")
+                settings.logger.info(f"File downloaded successfully: {key}")
                 return file_content
 
             with open(destination_path, "wb") as f:
                 client.download_fileobj(bucket_name, key, f)
-            logging.info(
+            settings.logger.info(
                 f"File downloaded successfully: {key}\nSaved at {destination_path}"
             )
             return True
         except ClientError as error:
-            logging.error(f"Error downloading file: {error}")
+            settings.logger.error(
+                f"Error downloading file:\nkey: {key}\nerror: {error}"
+            )
 
         return None

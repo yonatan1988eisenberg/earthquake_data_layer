@@ -12,6 +12,7 @@ import pyarrow.parquet as pq
 
 from earthquake_data_layer import definitions, settings
 from earthquake_data_layer.metadata_manager import MetadataManager
+from earthquake_data_layer.settings import logger
 from earthquake_data_layer.storage import Storage
 
 
@@ -106,6 +107,7 @@ def update_runs_metadata(
         )
     # if the file doesn't exist (first run)
     except FileNotFoundError:
+        logger.error("Couldn't find runs.parquet")
         df = pd.DataFrame.from_records([run_metadata])
 
     # upload to storage

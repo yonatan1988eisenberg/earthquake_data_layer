@@ -18,21 +18,29 @@ def read_root():
     "returns the run_id if successful, raises an exception otherwise",
 )
 def collect(run_id: str):
+
+    settings.logger.info(f"incoming get request at /collect/{run_id}")
+
     try:
         result = run_collection(run_id)
+        settings.logger.info("Success! return results")
         return {"result": result, "status": "success"}
 
     except DoneCollectingError:
+        settings.logger.info("It looks like we're done collecting..")
         return {"result": "done_collecting", "status": "success"}
 
     except StorageConnectionError as error:
+        settings.logger.critical(f"Could not connect to the cloud:\n {error}")
         raise HTTPException(status_code=501, detail=str(error)) from error
 
     except Exception as error:
+        settings.logger.critical(f"Encountered and error:\n {error}")
         raise HTTPException(status_code=500, detail=str(error)) from error
 
 
 def start():
+    settings.logger.info("Starting app")
     run(app, host=settings.EDL_ENDPOINT, port=settings.EDL_PORT)
 
 
