@@ -12,7 +12,16 @@ from earthquake_data_layer import (
     Validate,
     definitions,
     helpers,
+    settings,
 )
+
+
+class DoneCollectingError(Exception):
+    pass
+
+
+class StorageConnectionError(Exception):
+    pass
 
 
 @click.command()
@@ -54,13 +63,20 @@ def run(run_id: str):
 
     logging.info(f"started running with id {run_id}")
 
+    # verify the bucket exist and connection can be established
+    storage = Storage()
+    if not storage.bucket_exists(settings.AWS_BUCKET_NAME, create=True):
+        raise StorageConnectionError("couldn't establish connection to the cloud")
+
     try:
         # get metadata
         metadata_manager = MetadataManager()
 
         # abort if no more cycles are needed
         if metadata_manager.metadata.get("done_collecting"):
-            raise EOFError("According to the metadata, we're done_collecting")
+            raise DoneCollectingError(
+                "According to the metadata, we're done_collecting"
+            )
 
         # fetch data
         downloader = Downloader(metadata_manager)
