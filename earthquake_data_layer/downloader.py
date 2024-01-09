@@ -1,6 +1,6 @@
 import datetime
-import logging
 import os
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from typing import Literal, Optional, Union
 
@@ -60,6 +60,8 @@ class Downloader:
         self.metadata_manager = metadata_manager
         self.mode = mode
 
+        settings.logger.info("Downloader initiated")
+
     @property
     def keys_metadata(self) -> dict[str, tuple[str, int]]:
         """
@@ -87,6 +89,8 @@ class Downloader:
 
             keys_metadata[key_name] = (api_key, remaining_requests)
 
+        settings.logger.debug(f"calculated keys_metadata:\n{keys_metadata}")
+
         return keys_metadata
 
     @property
@@ -109,6 +113,10 @@ class Downloader:
                 - datetime.timedelta(days=settings.UPDATE_TIME_DELTA_DAYS)
             ).strftime(definitions.DATE_FORMAT)
             end_date = definitions.TODAY.strftime(definitions.DATE_FORMAT)
+
+        settings.logger.debug(
+            f"Using {start_date} as start_date and {end_date} as end_date."
+        )
 
         return start_date, end_date
 
@@ -159,8 +167,9 @@ class Downloader:
                 },
             }
 
-        except requests.RequestException as e:
-            logging.error(f"Error in API request: {e}")
+        except requests.RequestException:
+            settings.logger.error("Error in an API request")
+            # todo: return a dict indicating the error and request params
             raise
 
     def generate_requests_params(
@@ -220,6 +229,8 @@ class Downloader:
             ):
                 break
 
+        settings.logger.info("generated the requests parameters")
+
         # Returning the lists of request parameters and headers
         return requests_params, headers
 
@@ -270,6 +281,7 @@ class Downloader:
 
             base_query_kwargs[date_name] = date
 
+        settings.logger.debug(f"calculated base_query_kwargs:\n{base_query_kwargs}")
         return base_query_kwargs
 
     def fetch_data(self, **kwargs) -> list[dict]:
@@ -286,14 +298,17 @@ class Downloader:
                 base_query_kwargs=base_query_kwargs
             )
 
+            settings.logger.info("Starting calls to API.")
             with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
                 api_responses = list(
                     executor.map(self.get_api_response, requests_params, headers)
                 )
 
+            settings.logger.info("Finished calls to API.")
+
+            # todo: verify the responses status
             return api_responses
 
         except Exception as error:
-            logging.error(f"--- error ---\n{error.__traceback__}")
-
-        return []
+            settings.logger.critical(f"Encountered an error:\n{error}")
+            sys.exit(1)

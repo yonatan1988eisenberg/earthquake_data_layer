@@ -1,6 +1,8 @@
 # pylint: disable=missing-module-docstring,pointless-string-statement
+import logging
 import os
 import re
+import sys
 
 from dotenv import load_dotenv
 
@@ -31,7 +33,7 @@ EARLIEST_EARTHQUAKE_DATE = "1900-01-01"
 # data point types to fetch, more details can be found at the API homepage
 DATA_TYPE_TO_FETCH = "earthquake"
 # how many requests to leave in each key when collecting
-REQUESTS_TOLERANCE = 10
+REQUESTS_TOLERANCE = 145
 
 """ Metadata Location """
 LOCAL_METADATA = False
@@ -60,3 +62,11 @@ AWS_BUCKET_NAME = os.getenv("AWS_BUCKET_NAME", None)
 
 """ Logging """
 LOGLEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=LOGLEVEL,
+    stream=sys.stdout,
+    format="""************ LOGGER level: %(levelname)s timestamp: %(asctime)s ************
+origin: %(pathname)s:%(lineno)d func: %(funcName)s
+massage: %(message)s""",
+)
+logger = logging.getLogger("EDL")
