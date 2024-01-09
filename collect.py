@@ -1,7 +1,6 @@
 import json
 import logging
 
-import click
 import pandas as pd
 
 from earthquake_data_layer import (
@@ -10,7 +9,6 @@ from earthquake_data_layer import (
     Preprocess,
     Storage,
     Validate,
-    definitions,
     helpers,
     settings,
 )
@@ -24,13 +22,7 @@ class StorageConnectionError(Exception):
     pass
 
 
-@click.command()
-@click.option(
-    "--run_id",
-    default=definitions.TODAY.strftime("%Y-%m-%d_%H-%m-%S"),
-    help="a unique id for the run",
-)
-def run(run_id: str):
+def run_collection(run_id: str):
     """
     Execute a data collection run.
 
@@ -139,8 +131,3 @@ def run(run_id: str):
     except Exception as e:
         logging.error(f"An error occurred during the data collection run: {e}")
         raise
-
-
-# pylint: disable=no-value-for-parameter
-if __name__ == "__main__":
-    run()

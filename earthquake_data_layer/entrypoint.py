@@ -1,8 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from uvicorn import run
 
-from collect import DoneCollectingError, StorageConnectionError
-from collect import run as run_collection
+from collect import DoneCollectingError, StorageConnectionError, run_collection
 from earthquake_data_layer import settings
 
 app = FastAPI()
