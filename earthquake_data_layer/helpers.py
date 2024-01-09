@@ -2,6 +2,7 @@ import datetime
 import logging
 import random
 import string
+from copy import deepcopy
 from random import choice
 from typing import Union
 
@@ -10,6 +11,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from earthquake_data_layer import definitions, settings
+from earthquake_data_layer.metadata_manager import MetadataManager
 from earthquake_data_layer.storage import Storage
 
 
@@ -135,3 +137,83 @@ def key_api2name(key: str) -> Union[str, bool]:
                 f"more than one API name matches the key, returning a random choice - {rand_candidate}"
             )
             return rand_candidate
+
+
+def updated_and_save_metadata(
+    metadata_manager: MetadataManager, run_metadata: dict, save: bool = True
+) -> bool:
+    """
+    Update collection dates in the metadata manager based on the provided run metadata.
+
+    Parameters:
+    - metadata_manager (MetadataManager): The metadata manager instance.
+    - run_metadata (dict): Metadata from the current run.
+    - save (bool): if to upload the updated metadata, defaults to True
+
+    Returns:
+    bool: True if the update and save operation is successful, False otherwise.
+
+    This function updates the collection dates in the metadata manager based on the
+    information provided in the run metadata. It adjusts the start date, end date, offset,
+    and collection start date according to the logic defined for different scenarios,
+    including the first run, last run, and collecting before the required start date.
+
+    Data collections will be made of cycles. collection_start_time will be set when a new one begins and data from
+    start_date to {collection_start_time - 1 day} will be gathered in that cycle by conducting as many runs as needed.
+    When all the data will be gathered (new_end_date = start_date) start_date will be set and the rest of the parameters
+    will be set to False, indicating a new cycle begins.
+    The process repeats until all the data from {run_date - 1 day} to setting.EARLIEST_EARTHQUAKE_DATE is collected,
+    at which point start and end date will indicate a date range (from which the data was collected during
+    all the cycles) and offset and collection_start_time will be set to False.
+
+    If the update is successful, the function returns True; otherwise, it returns False.
+
+    note: some duplicated rows are expected but no data will be lost.
+    """
+
+    (
+        start_date,
+        _,
+        _,
+        collection_start_date,
+    ) = metadata_manager.collection_dates
+
+    new_start_date = deepcopy(start_date)
+    new_end_date = deepcopy(run_metadata["next_run_dates"]["earliest_date"])
+    new_offset = deepcopy(run_metadata["next_run_dates"]["offset"])
+    new_collection_start_date = deepcopy(collection_start_date)
+
+    first_cycle_run = collection_start_date == definitions.TODAY.strftime(
+        definitions.DATE_FORMAT
+    )
+    last_cycle_run = new_end_date == start_date
+
+    # at the end of a cycle
+    if last_cycle_run:
+        # collection_start_date - 1 day
+        new_start_date = (
+            datetime.datetime.strptime(
+                new_collection_start_date, definitions.DATE_FORMAT
+            )
+            - datetime.timedelta(days=1)
+        ).strftime(definitions.DATE_FORMAT)
+        new_end_date = False
+        new_offset = False
+        new_collection_start_date = False
+
+    # on the last run
+    if last_cycle_run and first_cycle_run:
+        metadata_manager.metadata["done_collecting"] = True
+        new_end_date = new_start_date
+        new_start_date = settings.EARLIEST_EARTHQUAKE_DATE
+        new_offset = False
+        new_collection_start_date = False
+
+    # this save metadata_manager.metadata["done_collecting"] = True as well
+    return metadata_manager.update_collection_dates(
+        start_date=new_start_date,
+        end_date=new_end_date,
+        offset=new_offset,
+        collection_start_date=new_collection_start_date,
+        save=save,
+    )

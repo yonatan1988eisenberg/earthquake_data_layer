@@ -1,87 +1,8 @@
-# pylint: disable=redefined-outer-name, use-a-generator
-import datetime
+# pylint: disable=use-a-generator
 from collections import Counter
 from copy import deepcopy
 
-import pytest
-
 from earthquake_data_layer import Preprocess, definitions
-
-
-@pytest.fixture
-def num_rows():
-    num_rows = 10
-
-    return num_rows
-
-
-@pytest.fixture
-def num_cols():
-    num_cols = 5
-
-    return num_cols
-
-
-@pytest.fixture
-def sample_response(num_rows, num_cols):
-    mock_data = list()
-    for row in range(num_rows):
-        row_data = dict()
-        for col in range(num_cols):
-            row_data[f"row{row}_col{col}"] = row * col
-        row_data["date"] = definitions.TODAY.strftime(definitions.EXPECTED_DATE_FORMAT)
-
-        mock_data.append(row_data)
-
-    return {
-        "raw_response": {
-            "data": mock_data,
-            "other_key": "other_value",
-        },
-        "metadata": {
-            "request_params": {
-                f"param_{param}": f"value_{param}" for param in range(num_cols)
-            },
-            "key_name": "sample_key",
-        },
-    }
-
-
-@pytest.fixture
-def inverted_sample_response(num_rows, num_cols):
-    mock_data = list()
-    for row in range(num_cols):
-        row_data = dict()
-        for col in range(num_rows):
-            row_data[f"row{row}_col{col}"] = row * col
-        row_data["date"] = definitions.TODAY.strftime(definitions.EXPECTED_DATE_FORMAT)
-
-        mock_data.append(row_data)
-
-    return {
-        "raw_response": {
-            "data": mock_data,
-            "other_key": "other_value",
-        },
-        "metadata": {
-            "request_params": {
-                f"param_{param}": f"value_{param}" for param in range(5)
-            },
-            "key_name": "sample_key",
-        },
-    }
-
-
-@pytest.fixture
-def mock_dates_counter(num_rows, num_cols):
-    today_str = definitions.TODAY.strftime(definitions.DATE_FORMAT)
-    tomorrow_str = (definitions.TODAY + datetime.timedelta(days=1)).strftime(
-        definitions.DATE_FORMAT
-    )
-    row_date = Counter()
-    row_date.update([today_str] * num_rows + [tomorrow_str] * num_cols)
-
-    return row_date
 
 
 def test_process_response(sample_response, num_rows, num_cols):
@@ -124,7 +45,6 @@ def test_process_response(sample_response, num_rows, num_cols):
 
 
 def test_get_next_run_dates(mock_dates_counter, num_rows):
-
     result = Preprocess.get_next_run_dates(mock_dates_counter)
     assert result == {
         "earliest_date": definitions.TODAY.strftime(definitions.DATE_FORMAT),

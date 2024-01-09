@@ -17,7 +17,7 @@ def test_get_collection_dates_default():
     assert start_date == settings.EARLIEST_EARTHQUAKE_DATE
     assert end_date == definitions.YESTERDAY.strftime(definitions.DATE_FORMAT)
     assert offset == 1
-    assert collection_start_date is False
+    assert collection_start_date == definitions.TODAY.strftime(definitions.DATE_FORMAT)
 
 
 def test_update_collection_dates_no_save(blank_metadata):

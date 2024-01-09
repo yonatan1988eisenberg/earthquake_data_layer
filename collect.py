@@ -1,4 +1,5 @@
 import json
+import logging
 
 import click
 import pandas as pd
@@ -14,69 +15,6 @@ from earthquake_data_layer import (
 )
 
 
-def updated_and_save_metadata(
-    metadata_manager: MetadataManager, run_metadata: dict
-) -> bool:
-    """
-    Update collection dates in the metadata manager based on the provided run metadata.
-
-    Parameters:
-    - metadata_manager (MetadataManager): The metadata manager instance.
-    - run_metadata (dict): Metadata from the current run.
-
-    Returns:
-    bool: True if the update and save operation is successful, False otherwise.
-
-    This function updates the collection dates in the metadata manager based on the
-    information provided in the run metadata. It adjusts the start date, end date, offset,
-    and collection start date according to the logic defined for different scenarios,
-    including the first run, last run, and collecting before the required start date.
-
-    Data collections will be made of cycles. collection_start_time will be set when a new one begins and data from
-    start_date to {collection_start_time - 1 day} will be gathered in that cycle by conducting as many runs as needed.
-    When all the data will be gathered (end_date <= start_date) start_date will be set to collection_start_time and
-    collection_start_time will be set to False, indicating a new cycle begins.
-    The process repeats until all the data from {run_date - 1 day} to setting.EARLIEST_EARTHQUAKE_DATE is collected.
-
-    If the update is successful, the function returns True; otherwise, it returns False.
-    """
-    (
-        start_date,
-        end_date,
-        _,
-        collection_start_date,
-    ) = metadata_manager.collection_dates
-
-    # when more runs are required to complete a cycle
-    new_end_date = run_metadata["next_run_dates"]["earliest_date"]
-    new_offset = run_metadata["next_run_dates"]["offset"]
-
-    # on the first run of a cycle
-    if not collection_start_date:
-        collection_start_date = definitions.TODAY.strftime(definitions.DATE_FORMAT)
-
-    # on the last run
-    elif new_end_date <= start_date and end_date == definitions.YESTERDAY.strftime(
-        definitions.DATE_FORMAT
-    ):
-        metadata_manager.metadata["done_collecting"] = True
-
-    # at the end of a cycle
-    elif new_end_date <= start_date:
-        start_date = collection_start_date
-        new_end_date = definitions.YESTERDAY.strftime(definitions.DATE_FORMAT)
-        new_offset = 1
-        collection_start_date = False
-
-    return metadata_manager.update_collection_dates(
-        start_date=start_date,
-        end_date=new_end_date,
-        offset=new_offset,
-        collection_start_date=collection_start_date,
-        save=True,
-    )
-
-
 @click.command()
 @click.option(
     "--run_id",
@@ -84,67 +22,107 @@ def updated_and_save_metadata(
     help="a unique id for the run",
 )
 def run(run_id: str):
-    # get metadata
-    metadata_manager = MetadataManager()
+    """
+    Execute a data collection run.
 
-    # abort if no more cycles are needed
-    if metadata_manager.metadata.get("done_collecting"):
-        raise EOFError("according to the metadata we're done_collecting")
+    Parameters:
+    - run_id (str): A unique identifier for the run.
 
-    # fetch data
-    downloader = Downloader(metadata_manager)
-    responses = downloader.fetch_data()
+    Raises:
+    - EOFError: Raised if no more data collection cycles are needed based on the metadata.
+    - RuntimeError: Raised if there is an error during the update and upload process.
 
-    # preprocess
-    data_key = helpers.generate_data_key(run_id)
-    run_metadata, responses_metadata, data = Preprocess.preprocess(
-        responses, run_id, data_key
-    )
+    Returns:
+    dict: Metadata for the data collection run.
 
-    # validate
-    run_metadata["validation_report"] = Validate.validate(
-        metadata_manager=metadata_manager, run_metadata=run_metadata
-    )
+    This function performs the following steps:
+    1. Initializes a MetadataManager to manage metadata for the run.
+    2. Aborts the run if no more cycles are needed based on the 'done_collecting' flag in the metadata.
+    3. Uses a Downloader to fetch data from the API.
+    4. Preprocesses the responses using the Preprocess class.
+    5. Validates the run using the Validate class and updates the 'validation_report' in the run metadata.
+    6. Uploads artifacts to a storage service using the Storage class.
+      - Uploads responses metadata as a JSON file.
+      - Uploads the processed data as a DataFrame.
+      - Updates the 'runs.parquet' file with the run metadata.
+    7. Updates metadata and saves it using the 'updated_and_save_metadata' function.
+    8. Returns the run metadata if all upload and update operations are successful.
+    9. Raises a RuntimeError if any of the upload or update operations fail.
 
-    # upload artifacts:
-    connection = Storage()
+    Note: Ensure proper exception handling and logging are implemented in production.
+    """
 
-    # the responses metadata
-    responses_metadata_uploaded = connection.save_object(
-        json.dumps(responses_metadata).encode("utf-8"),
-        helpers.generate_responses_metadata_key(run_id),
-    )
+    logging.info(f"started running with id {run_id}")
 
-    # the data
-    data_uploaded = helpers.upload_df(
-        pd.DataFrame.from_records(data), helpers.generate_data_key(run_id), connection
-    )
+    try:
+        # get metadata
+        metadata_manager = MetadataManager()
 
-    # update runs.parquet
-    runs_metadata_updated = helpers.update_runs_metadata(run_metadata, connection)
+        # abort if no more cycles are needed
+        if metadata_manager.metadata.get("done_collecting"):
+            raise EOFError("According to the metadata, we're done_collecting")
 
-    # update metadata and save
-    metadata_saved = updated_and_save_metadata(metadata_manager, run_metadata)
+        # fetch data
+        downloader = Downloader(metadata_manager)
+        responses = downloader.fetch_data()
 
-    # pylint: disable=no-else-return
-    if all(
-        [
-            data_uploaded,
-            responses_metadata_uploaded,
-            runs_metadata_updated,
-            metadata_saved,
-        ]
-    ):
-        return run_id
-
-    else:
-        raise RuntimeError(
-            f"""update and upload error:\n
-            responses_metadata_uploaded: {responses_metadata_uploaded}\n
-            data_uploaded: {data_uploaded}\n
-            runs_metadata_updated: {runs_metadata_updated}\n
-            metadata_saved: {metadata_saved}"""
+        # preprocess
+        data_key = helpers.generate_data_key(run_id)
+        run_metadata, responses_metadata, data = Preprocess.preprocess(
+            responses, run_id, data_key
         )
+
+        # validate
+        run_metadata["validation_report"] = Validate.validate(
+            metadata_manager=metadata_manager, run_metadata=run_metadata
+        )
+
+        # upload artifacts
+        connection = Storage()
+
+        # the responses metadata
+        responses_metadata_uploaded = connection.save_object(
+            json.dumps(responses_metadata).encode("utf-8"),
+            helpers.generate_responses_metadata_key(run_id),
+        )
+
+        # the data
+        data_uploaded = helpers.upload_df(
+            pd.DataFrame.from_records(data),
+            helpers.generate_data_key(run_id),
+            connection,
+        )
+
+        # update runs.parquet
+        runs_metadata_updated = helpers.update_runs_metadata(run_metadata, connection)
+
+        # update metadata and save
+        metadata_saved = helpers.updated_and_save_metadata(
+            metadata_manager, run_metadata
+        )
+
+        # pylint: disable=no-else-return
+        if all(
+            [
+                data_uploaded,
+                responses_metadata_uploaded,
+                runs_metadata_updated,
+                metadata_saved,
+            ]
+        ):
+            logging.info("Data collection run completed successfully.")
+            return run_metadata
+        else:
+            raise RuntimeError(
+                f"""Update and upload error:\n
+                Responses metadata uploaded: {responses_metadata_uploaded}\n
+                Data uploaded: {data_uploaded}\n
+                Runs metadata updated: {runs_metadata_updated}\n
+                Metadata saved: {metadata_saved}"""
+            )
+    except Exception as e:
+        logging.error(f"An error occurred during the data collection run: {e}")
+        raise
 
 
 # pylint: disable=no-value-for-parameter

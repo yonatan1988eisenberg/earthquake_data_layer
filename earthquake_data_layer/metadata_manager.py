@@ -5,8 +5,9 @@ from typing import Optional, Union
 
 from botocore.exceptions import ClientError
 
-from earthquake_data_layer import definitions, settings, storage
-from earthquake_data_layer.helpers import is_valid_date
+from earthquake_data_layer import definitions, helpers, settings, storage
+
+# from earthquake_data_layer.helpers import is_valid_date
 
 
 class MetadataManager:
@@ -74,8 +75,8 @@ class MetadataManager:
                     metadata = json.load(file)
 
             except (FileNotFoundError, json.JSONDecodeError) as error:
-                logging.info(
-                    f"Error reading metadata file, returning empty dict: {error}"
+                logging.error(
+                    f"Error reading local metadata file, returning empty dict: {error}"
                 )
                 return {}
         else:
@@ -93,8 +94,8 @@ class MetadataManager:
                 else:
                     metadata = {}
             except (ClientError, json.JSONDecodeError) as error:
-                logging.info(
-                    f"Error reading metadata file, returning empty dict: {error.__traceback__}"
+                logging.error(
+                    f"Error reading cloud metadata file, returning empty dict: {error.__traceback__}"
                 )
                 metadata = {}
 
@@ -127,7 +128,7 @@ class MetadataManager:
                 return True
 
             except (ClientError, AssertionError) as error:
-                logging.info(f"Error uploading metadata file: {error.__traceback__}")
+                logging.error(f"Error uploading metadata file: {error.__traceback__}")
                 return False
 
     @property
@@ -140,15 +141,26 @@ class MetadataManager:
         """
 
         collection_dates = self.metadata.get("collection_dates", {})
-        start_date = collection_dates.get(
-            "start_date", settings.EARLIEST_EARTHQUAKE_DATE
-        )
-        end_date = collection_dates.get(
-            "end_date", definitions.YESTERDAY.strftime(definitions.DATE_FORMAT)
-        )
+        start_date = collection_dates.get("start_date")
+        end_date = collection_dates.get("end_date")
         offset = collection_dates.get("offset", 1)
-        collection_start_date = collection_dates.get("collection_start_date", False)
-        return start_date, end_date, offset, collection_start_date
+        collection_start_date = collection_dates.get("collection_start_date")
+
+        # the parameter may be missing or set to False, in both cases we'll want to set them to a default value
+        params = [start_date, end_date, offset, collection_start_date]
+        default_values = (
+            settings.EARLIEST_EARTHQUAKE_DATE,
+            definitions.YESTERDAY.strftime(definitions.DATE_FORMAT),
+            1,
+            definitions.TODAY.strftime(definitions.DATE_FORMAT),
+        )
+
+        return tuple(
+            (
+                param or default_value
+                for param, default_value in zip(params, default_values)
+            )
+        )
 
     def update_collection_dates(
         self, save: bool = False, **kwargs
@@ -180,7 +192,7 @@ class MetadataManager:
             ["start_date", "end_date", "collection_start_date"],
             [start_date, end_date, collection_start_date],
         ):
-            date = is_valid_date(date)
+            date = helpers.is_valid_date(date)
             if date:
                 collection_dates[date_name] = date
             else:

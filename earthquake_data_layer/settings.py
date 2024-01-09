@@ -47,6 +47,10 @@ RANDOM_STRING_LENGTH_RESPONSE_ID = 5
 API_HOST = os.getenv("API_HOST", None)
 API_KEYs = get_api_keys()
 
+# earthquake data layer creds
+EDL_ENDPOINT = os.getenv("EDL_ENDPOINT", "127.0.0.1")
+EDL_PORT = os.getenv("EDL_PORT", "9000")
+
 # aws
 AWS_S3_ENDPOINT = os.getenv("AWS_S3_ENDPOINT", None)
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", None)
