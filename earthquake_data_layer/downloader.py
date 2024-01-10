@@ -167,10 +167,15 @@ class Downloader:
                 },
             }
 
-        except requests.RequestException:
+        except requests.RequestException as error:
             settings.logger.error("Error in an API request")
-            # todo: return a dict indicating the error and request params
-            raise
+            return {
+                "error": error,
+                "metadata": {
+                    "request_params": request_params,
+                    "key_name": key_api2name(headers.get("X-RapidAPI-Key")),
+                },
+            }
 
     def generate_requests_params(
         self, **kwargs

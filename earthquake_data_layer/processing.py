@@ -1,7 +1,7 @@
 import datetime
 import itertools
 from collections import Counter
-from typing import Literal
+from typing import Literal, Optional
 
 from earthquake_data_layer import definitions, helpers, settings
 from earthquake_data_layer.helpers import is_valid_date
@@ -43,6 +43,11 @@ class Preprocess:
     """
 
     @classmethod
+    def process_erred_response(cls, **kwargs):
+        # todo: implement
+        raise NotImplementedError
+
+    @classmethod
     def process_response(
         cls,
         response: dict,
@@ -52,7 +57,7 @@ class Preprocess:
         count: int,
         columns: Counter,
         row_dates: Counter,
-    ) -> tuple[dict, list[dict], list[str], int, Counter, Counter]:
+    ) -> tuple[Optional[dict], Optional[list[dict]], list[str], int, Counter, Counter]:
         """
         Process a single earthquake data response.
 
@@ -70,6 +75,11 @@ class Preprocess:
         Returns:
         tuple: Metadata, processed data, updated response IDs, updated count, updated columns, updated row dates.
         """
+
+        # Check for errors
+        if response.get("error"):
+            cls.process_erred_response()
+            return None, None, responses_ids, count, columns, row_dates
 
         # Extract response's components
         metadata = response.get("metadata", {})
@@ -244,8 +254,11 @@ class Preprocess:
             ) = cls.process_response(
                 response, run_id, data_key, responses_ids, count, columns, row_dates
             )
-            responses_metadata.append(metadata)
-            three_d_data.append(two_dim_data)
+
+            if metadata is not None:
+                responses_metadata.append(metadata)
+            if two_dim_data is not None:
+                three_d_data.append(two_dim_data)
 
         # calculate new dates for the next run
         next_run_dates = cls.get_next_run_dates(row_dates)
