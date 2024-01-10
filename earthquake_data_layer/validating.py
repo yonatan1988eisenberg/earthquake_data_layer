@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Union
 
-from earthquake_data_layer import MetadataManager
+from earthquake_data_layer import MetadataManager, settings
 
 
 class ValidationStep(ABC):
@@ -11,11 +11,16 @@ class ValidationStep(ABC):
 
     @classmethod
     @abstractmethod
-    def execute(cls, **kwargs) -> tuple[str, dict]:
+    def execute(cls, **kwargs) -> tuple[str, Union[dict, None]]:
         pass
 
+    @classmethod
+    def log_error(cls, error_massage: str) -> tuple[str, dict]:
+        settings.logger.error(f"{error_massage} when validating {cls.name}")
+        return cls.name, {"error": error_massage}
 
-class ColumnsNames(ABC):
+
+class ColumnsNames(ValidationStep):
     """
     Verifies all the known columns exist and that there are no new columns.
     """
@@ -23,7 +28,7 @@ class ColumnsNames(ABC):
     name: str = "column_names"
 
     @classmethod
-    def execute(cls, **kwargs):
+    def execute(cls, **kwargs) -> tuple[str, Union[dict, None]]:
         """
         Execute the column names verification step.
 
@@ -38,7 +43,10 @@ class ColumnsNames(ABC):
         run_metadata: dict = kwargs.get("run_metadata")
 
         if not metadata_manager or not run_metadata:
-            raise TypeError("Missing argument, one of [metadata_manager, run_metadata]")
+            # raise TypeError("Missing argument, one of [metadata_manager, run_metadata]")
+            return cls.log_error(
+                "Missing argument, one of [metadata_manager, run_metadata]"
+            )
 
         known_cols = metadata_manager.known_columns
         run_columns = run_metadata.get("columns")
@@ -59,7 +67,7 @@ class ColumnsNames(ABC):
         return cls.name, report
 
 
-class MissingValues(ABC):
+class MissingValues(ValidationStep):
     """
     Returns a dictionary {column: number of missing values} or None if there are none.
     """
@@ -67,7 +75,7 @@ class MissingValues(ABC):
     name: str = "missing_values"
 
     @classmethod
-    def execute(cls, **kwargs):
+    def execute(cls, **kwargs) -> tuple[str, Union[dict, None]]:
         """
         Execute the missing values verification step.
 
@@ -80,14 +88,18 @@ class MissingValues(ABC):
         run_metadata: dict = kwargs.get("run_metadata")
 
         if not run_metadata:
-            raise TypeError("Missing argument: run_metadata")
+            # raise TypeError("Missing argument: run_metadata")
+            return cls.log_error("Missing argument: run_metadata")
 
         report = dict()
         expected_num_rows = run_metadata.get("count")
         columns = run_metadata.get("columns")
 
         if not expected_num_rows or not columns:
-            raise ValueError("Run metadata is missing a key, one of [count, columns]")
+            # raise ValueError("Run metadata is missing a key, one of [count, columns]")
+            return cls.log_error(
+                "Run metadata is missing a key, one of [count, columns]"
+            )
 
         for col, values in columns.items():
             if values != expected_num_rows:
@@ -118,6 +130,9 @@ class Validate:
         Returns:
         dict: A dictionary containing validation reports for each step.
         """
+
+        settings.logger.info("Starting validation")
+
         report = dict()
 
         if steps is None:
@@ -126,5 +141,7 @@ class Validate:
         for step in steps:
             step_name, step_report = step.execute(**kwargs)
             report[step_name] = step_report
+
+        settings.logger.debug(f"Validation finished. report: {report}")
 
         return report

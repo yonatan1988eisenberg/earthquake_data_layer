@@ -34,6 +34,10 @@ def collect(run_id: str):
         settings.logger.critical(f"Could not connect to the cloud:\n {error}")
         raise HTTPException(status_code=501, detail=str(error)) from error
 
+    except RuntimeError as error:
+        settings.logger.critical(f"Encountered a Runtime Error:\n {error}")
+        raise HTTPException(status_code=501, detail=str(error)) from error
+
     except Exception as error:
         settings.logger.critical(f"Encountered and error:\n {error}")
         raise HTTPException(status_code=500, detail=str(error)) from error

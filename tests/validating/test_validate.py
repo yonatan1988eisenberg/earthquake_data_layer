@@ -31,3 +31,10 @@ def test_validate_custom_steps(blank_metadata, mock_run_metadata):
 
     # Check that validation reports for the specified steps are present
     assert result == {"column_names": {"missing_columns": [], "new_columns": []}}
+
+
+def test_missing_arguments():
+    result = Validate.validate()
+
+    assert all((step.name in result for step in Validate.steps))
+    assert all(("error" in result[step.name] for step in Validate.steps))

@@ -65,8 +65,6 @@ LOGLEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(
     level=LOGLEVEL,
     stream=sys.stdout,
-    format="""************ LOGGER level: %(levelname)s timestamp: %(asctime)s ************
-origin: %(pathname)s:%(lineno)d func: %(funcName)s
-massage: %(message)s""",
+    format="""%(name)s :: %(levelname)-8s :: %(asctime)s %(filename)s:%(lineno)d -30s %(message)s""",
 )
 logger = logging.getLogger("EDL")

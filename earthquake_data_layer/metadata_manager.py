@@ -1,13 +1,10 @@
 import datetime
 import json
-import logging
 from typing import Optional, Union
 
 from botocore.exceptions import ClientError
 
 from earthquake_data_layer import definitions, helpers, settings, storage
-
-# from earthquake_data_layer.helpers import is_valid_date
 
 
 class MetadataManager:
@@ -62,6 +59,10 @@ class MetadataManager:
             metadata = self.get_metadate()
         self.metadata = metadata
 
+        settings.logger.info(
+            f"Initiated MetadataManager with metadata: {self.metadata}"
+        )
+
     def get_metadate(self) -> dict:
         """
         Fetch metadata from the file or cloud storage.
@@ -75,7 +76,7 @@ class MetadataManager:
                     metadata = json.load(file)
 
             except (FileNotFoundError, json.JSONDecodeError) as error:
-                logging.error(
+                settings.logger.error(
                     f"Error reading local metadata file, returning empty dict: {error}"
                 )
                 return {}
@@ -94,8 +95,8 @@ class MetadataManager:
                 else:
                     metadata = {}
             except (ClientError, json.JSONDecodeError) as error:
-                logging.error(
-                    f"Error reading cloud metadata file, returning empty dict: {error.__traceback__}"
+                settings.logger.error(
+                    f"Error reading cloud metadata file, returning empty dict: {error}"
                 )
                 metadata = {}
 
@@ -112,9 +113,11 @@ class MetadataManager:
             try:
                 with open(definitions.METADATA_LOCATION, "w", encoding="utf-8") as file:
                     json.dump(self.metadata, file)
+
+                settings.logger.info("metadata successfully saved")
                 return True
             except Exception as error:
-                logging.error(f"Unable to open file: {error.__traceback__}")
+                settings.logger.error(f"Unable to save metadata file: {error}")
                 return False
         else:
             try:
@@ -125,10 +128,11 @@ class MetadataManager:
                     bucket_name=self.bucket,
                 )
                 assert transaction is True
+                settings.logger.info("metadata successfully uploaded")
                 return True
 
             except (ClientError, AssertionError) as error:
-                logging.error(f"Error uploading metadata file: {error.__traceback__}")
+                settings.logger.error(f"Error uploading metadata file: {error}")
                 return False
 
     @property
@@ -155,12 +159,14 @@ class MetadataManager:
             definitions.TODAY.strftime(definitions.DATE_FORMAT),
         )
 
-        return tuple(
+        return_values = tuple(
             (
                 param or default_value
                 for param, default_value in zip(params, default_values)
             )
         )
+        settings.logger.debug(f"collection_dates was calculated as {return_values}")
+        return return_values
 
     def update_collection_dates(
         self, save: bool = False, **kwargs
@@ -178,6 +184,9 @@ class MetadataManager:
         Raises:
         ValueError: If date values are not in the expected format (default definitions.DATE_FORMAT).
         """
+
+        settings.logger.info("updating collection dates")
+
         start_date = kwargs.get("start_date")
         end_date = kwargs.get("end_date")
         offset = kwargs.get("offset")
@@ -270,6 +279,8 @@ class MetadataManager:
 
         # update metadata
         self.metadata["keys"] = keys
+
+        settings.logger.info("Updated the API keys remaining requests")
 
         return True
 
