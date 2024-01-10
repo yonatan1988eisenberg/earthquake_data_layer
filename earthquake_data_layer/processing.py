@@ -44,7 +44,7 @@ class Preprocess:
 
     @classmethod
     def process_erred_response(cls, **kwargs):
-        # todo: implement
+        # todo: implement and add tests
         raise NotImplementedError
 
     @classmethod
