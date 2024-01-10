@@ -131,6 +131,3 @@ def run_collection(run_id: str):
     except Exception as e:
         settings.logger.error(f"An error occurred during the data collection run: {e}")
         raise
-
-
-run_collection("sample_run_id")

@@ -1,6 +1,7 @@
 import datetime
 import os
 import sys
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from typing import Literal, Optional, Union
 
@@ -289,6 +290,20 @@ class Downloader:
         settings.logger.debug(f"calculated base_query_kwargs:\n{base_query_kwargs}")
         return base_query_kwargs
 
+    def update_keys_remaining_requests(self, responses: list[dict]):
+        """updates the remaining key for each key used"""
+        keys_usage = Counter()
+        keys_usage.update([response["metadata"]["key_name"] for response in responses])
+
+        for key in keys_usage:
+            start_requests = self.metadata_manager.key_remaining_requests(key)
+            used_requests = keys_usage[key]
+            self.metadata_manager.update_key_remaining_requests(
+                key, start_requests - used_requests
+            )
+
+        settings.logger.info("Updated the API keys remaining requests")
+
     def fetch_data(self, **kwargs) -> list[dict]:
         """
         Fetch metadata from the API.
@@ -311,7 +326,9 @@ class Downloader:
 
             settings.logger.info("Finished calls to API.")
 
-            # todo: update keys remaining requests
+            # update keys remaining requests
+            self.update_keys_remaining_requests(api_responses)
+
             return api_responses
 
         except Exception as error:

@@ -280,7 +280,7 @@ class MetadataManager:
         # update metadata
         self.metadata["keys"] = keys
 
-        settings.logger.info("Updated the API keys remaining requests")
+        settings.logger.info("Updated an API keys remaining requests")
 
         return True
 
