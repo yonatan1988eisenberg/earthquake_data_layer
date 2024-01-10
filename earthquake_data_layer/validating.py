@@ -43,13 +43,15 @@ class ColumnsNames(ValidationStep):
         run_metadata: dict = kwargs.get("run_metadata")
 
         if not metadata_manager or not run_metadata:
-            # raise TypeError("Missing argument, one of [metadata_manager, run_metadata]")
             return cls.log_error(
                 "Missing argument, one of [metadata_manager, run_metadata]"
             )
 
         known_cols = metadata_manager.known_columns
         run_columns = run_metadata.get("columns")
+
+        if not run_columns:
+            return cls.log_error("Run metadata is missing a key [columns]")
 
         report = dict()
         new_cols = list()
@@ -88,7 +90,6 @@ class MissingValues(ValidationStep):
         run_metadata: dict = kwargs.get("run_metadata")
 
         if not run_metadata:
-            # raise TypeError("Missing argument: run_metadata")
             return cls.log_error("Missing argument: run_metadata")
 
         report = dict()
@@ -96,7 +97,6 @@ class MissingValues(ValidationStep):
         columns = run_metadata.get("columns")
 
         if not expected_num_rows or not columns:
-            # raise ValueError("Run metadata is missing a key, one of [count, columns]")
             return cls.log_error(
                 "Run metadata is missing a key, one of [count, columns]"
             )
