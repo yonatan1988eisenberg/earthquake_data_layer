@@ -132,6 +132,10 @@ class Preprocess:
         earliest_date = next(iter(sorted(row_dates)))
         offset = row_dates[earliest_date]
 
+        settings.logger.debug(
+            f"The earliest date in the data is {earliest_date} with an offset of {offset}"
+        )
+
         return {"earliest_date": earliest_date, "offset": offset}
 
     @classmethod
@@ -160,6 +164,8 @@ class Preprocess:
         Returns:
         tuple: Merged data, run metadata.
         """
+
+        settings.logger.info("Started to bundle the data")
 
         run_metadata = {
             "mode": mode,
@@ -217,6 +223,8 @@ class Preprocess:
         data is a single list containing all the data from the input responses["raw_response]["data"]
         """
 
+        settings.logger.info("Started preprocessing the responses")
+
         responses_ids = []
         columns = Counter()
         row_dates = Counter()
@@ -246,5 +254,7 @@ class Preprocess:
         data, run_metadata = cls.bundle(
             three_d_data, responses_ids, columns, next_run_dates, mode, count, data_key
         )
+
+        settings.logger.debug(f"Preprocess complete. run_metadata: {run_metadata}")
 
         return run_metadata, responses_metadata, data
