@@ -118,7 +118,7 @@ def run_collection(run_id: str):
                 metadata_saved,
             ]
         ):
-            logging.info("Data collection run completed successfully.")
+            settings.logger.info("Data collection run completed successfully.")
             return run_metadata
         else:
             raise RuntimeError(
@@ -129,5 +129,8 @@ def run_collection(run_id: str):
                 Metadata saved: {metadata_saved}"""
             )
     except Exception as e:
-        logging.error(f"An error occurred during the data collection run: {e}")
+        settings.logger.error(f"An error occurred during the data collection run: {e}")
         raise
+
+
+run_collection("sample_run_id")
