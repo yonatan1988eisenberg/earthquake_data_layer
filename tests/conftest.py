@@ -100,6 +100,7 @@ def sample_response(num_rows, num_cols):
         "raw_response": {
             "data": mock_data,
             "other_key": "other_value",
+            "httpStatus": 200,
         },
         "metadata": {
             "request_params": {
@@ -125,6 +126,7 @@ def inverted_sample_response(num_rows, num_cols):
         "raw_response": {
             "data": mock_data,
             "other_key": "other_value",
+            "httpStatus": 200,
         },
         "metadata": {
             "request_params": {

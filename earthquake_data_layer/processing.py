@@ -45,7 +45,7 @@ class Preprocess:
     @classmethod
     def process_erred_response(cls, **kwargs):
         # todo: implement and add tests
-        raise NotImplementedError
+        pass
 
     @classmethod
     def process_response(
@@ -82,8 +82,17 @@ class Preprocess:
             return None, None, responses_ids, count, columns, row_dates
 
         # Extract response's components
-        metadata = response.get("metadata", {})
         raw_response = response.get("raw_response", {})
+
+        # handle in case of an error
+        if (
+            not len(raw_response.get("errors", [])) == 0
+            or not raw_response.get("httpStatus") == 200
+        ):
+            cls.process_erred_response()
+            return None, None, responses_ids, count, columns, row_dates
+
+        metadata = response.get("metadata", {})
         data = raw_response.pop("data", [])
 
         # Generate response_id

@@ -311,7 +311,6 @@ class Downloader:
 
             settings.logger.info("Finished calls to API.")
 
-            # todo: verify the responses status
             # todo: update keys remaining requests
             return api_responses
 
