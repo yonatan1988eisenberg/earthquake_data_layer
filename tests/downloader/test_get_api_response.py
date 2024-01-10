@@ -5,7 +5,7 @@ from earthquake_data_layer import Downloader, MetadataManager, settings
 
 
 @dataclass
-class mock_api_response:
+class MockApiResponse:
     content: dict
 
     def json(self):
@@ -24,7 +24,7 @@ def test_get_api_response():
 
     # mock response i/o
     mock_response_content = {"response_key": "response_value"}
-    mock_response = mock_api_response(mock_response_content)
+    mock_response = MockApiResponse(mock_response_content)
     mock_request_params = {"request_params_key": "request_params_value"}
     mock_headers = {"X-RapidAPI-Key": api_key}
 

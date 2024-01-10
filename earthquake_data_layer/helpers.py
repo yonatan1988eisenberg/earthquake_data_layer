@@ -115,7 +115,6 @@ def update_runs_metadata(
 
 
 def key_api2name(key: str) -> Union[str, bool]:
-    # todo: move to helpers
     """
     Convert API key to key name.
 

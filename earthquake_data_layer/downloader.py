@@ -76,11 +76,11 @@ class Downloader:
         for key_name, api_key in settings.API_KEYs.items():
             remaining_requests = 0
             if self.mode == "collection":
-                remaining_requests = max(
-                    0,
+                keys_remaining_requests = (
                     self.metadata_manager.key_remaining_requests(key_name)
-                    - settings.REQUESTS_TOLERANCE,
+                    - settings.REQUESTS_TOLERANCE
                 )
+                remaining_requests = max(0, keys_remaining_requests)
             elif self.mode == "update":
                 remaining_requests = min(
                     settings.NUM_REQUESTS_FOR_UPDATE,
