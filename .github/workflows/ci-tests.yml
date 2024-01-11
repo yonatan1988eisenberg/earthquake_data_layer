@@ -46,7 +46,7 @@ jobs:
         run: poetry install --no-interaction
       # install and run linters
       - run: |
-          pylint earthquake_data_layer/*
+          pylint *
           black . --check
           isort .
 # ----------------
