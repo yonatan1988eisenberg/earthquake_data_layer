@@ -31,11 +31,11 @@ build:
 integration_test: build
 	LOCAL_IMAGE_NAME=${DOCKER_USERNAME}/${APPLICATION_NAME}:${_BUILD_ARGS_TAG} bash integration_tests/run.sh
 
-push_%:
+push: integration_test, build
 	$(MAKE) _pusher \
 	-e _BUILD_ARGS_TAG="$*${GIT_HASH}"
 
-release: build integration_test
+release: push, integration_test, build
 	$(MAKE) _releaser \
 	-e _BUILD_ARGS_TAG="$*${_BUILD_ARGS_TAG}" \
 	-e _BUILD_ARGS_RELEASE_TAG="$*latest"

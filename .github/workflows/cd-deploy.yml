@@ -1,8 +1,5 @@
 name: CD-Deploy
 on:
-  push:
-    branches:
-      - 'prod'
   pull_request:
     branches:
       - 'prod'
@@ -13,5 +10,5 @@ jobs:
       steps:
       - name: checkout repo
         uses: actions/checkout@main
-      - name: release new version to hub
+      - name: release latest version to hub
         run: make release
