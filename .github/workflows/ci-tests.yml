@@ -46,7 +46,7 @@ jobs:
         run: poetry install --no-interaction
       # install and run linters
       - run: |
-          poetry run poetry pylint *
+          poetry run pylint *
           poetry run black . --check
           poetry run isort .
 # ----------------
