@@ -2,8 +2,7 @@ DOCKER_USERNAME ?= ${DOCKERHUB_USERNAME}
 APPLICATION_NAME ?= earthquake_data_layer
 
 GIT_HASH ?= $(shell git log --format="%h" -n 1)
-DATE = ${shell date +"%Y_%m_%d_%H_%M_%S"}
-_BUILD_ARGS_TAG ?= $(GIT_HASH)_$(DATE)
+_BUILD_ARGS_TAG ?= $(GIT_HASH)
 _BUILD_ARGS_RELEASE_TAG ?= latest
 _BUILD_ARGS_DOCKERFILE ?= Dockerfile
 
