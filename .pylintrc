@@ -16,7 +16,9 @@ ignore=CVS
 ignore-paths=
     README.md,
     poetry.lock,
-    pyproject.toml
+    pyproject.toml,
+    Makefile,
+    Dockerfile
 
 # Files or directories matching the regex patterns are skipped. The regex
 # matches against base names, not paths.
