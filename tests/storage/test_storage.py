@@ -1,5 +1,9 @@
+# pylint: disable=unused-import,redefined-outer-name
+
 import os
 import tempfile
+
+from tests.conftest import aws_credentials, storage, test_bucket
 
 
 def test_existing_and_nonexistent_buckets(storage, test_bucket):

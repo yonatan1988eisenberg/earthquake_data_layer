@@ -1,7 +1,9 @@
+# pylint: disable=unused-import,redefined-outer-name
 import datetime
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from earthquake_data_layer import MetadataManager, definitions, helpers, settings
+from tests.conftest import blank_metadata, mock_run_metadata
 
 
 def test_updated_and_save_metadata_first_run(mock_run_metadata):
@@ -9,8 +11,11 @@ def test_updated_and_save_metadata_first_run(mock_run_metadata):
     expected_end_date = mock_run_metadata["next_run_dates"]["earliest_date"]
     expected_offset = mock_run_metadata["next_run_dates"]["offset"]
     expected_collection_start_date = definitions.TODAY.strftime(definitions.DATE_FORMAT)
-
-    metadata_manager = MetadataManager(metadata={})
+    with patch(
+        "earthquake_data_layer.metadata_manager.MetadataManager.get_metadate",
+        return_value={},
+    ):
+        metadata_manager = MetadataManager(metadata=None)
     metadata_manager.update_collection_dates = MagicMock(return_value=True)
     result = helpers.updated_and_save_metadata(metadata_manager, mock_run_metadata)
 

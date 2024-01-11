@@ -7,6 +7,10 @@ import sys
 from dotenv import load_dotenv
 
 
+def get_bool(key):
+    return os.getenv(key, "false").casefold() == "true"
+
+
 def get_api_keys(pattern: str = r"API_KEY\w+") -> dict[str:str]:
     """
     api keys are expected to start with "API_KEY" such as API_KEY1, API_KEY2 etc.
@@ -61,7 +65,7 @@ AWS_REGION = os.getenv("AWS_REGION", None)
 AWS_BUCKET_NAME = os.getenv("AWS_BUCKET_NAME", None)
 
 # testing
-INTEGRATION_TEST = os.getenv("INTEGRATION_TEST", None)
+INTEGRATION_TEST = get_bool("INTEGRATION_TEST")
 
 """ Logging """
 LOGLEVEL = os.getenv("LOG_LEVEL", "ERROR").upper()
