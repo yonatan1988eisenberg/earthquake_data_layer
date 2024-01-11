@@ -33,7 +33,7 @@ EARLIEST_EARTHQUAKE_DATE = "1900-01-01"
 # data point types to fetch, more details can be found at the API homepage
 DATA_TYPE_TO_FETCH = "earthquake"
 # how many requests to leave in each key when collecting
-REQUESTS_TOLERANCE = 145
+REQUESTS_TOLERANCE = 5
 
 """ Metadata Location """
 LOCAL_METADATA = False
@@ -60,8 +60,11 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", None)
 AWS_REGION = os.getenv("AWS_REGION", None)
 AWS_BUCKET_NAME = os.getenv("AWS_BUCKET_NAME", None)
 
+# testing
+INTEGRATION_TEST = os.getenv("INTEGRATION_TEST", None)
+
 """ Logging """
-LOGLEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+LOGLEVEL = os.getenv("LOG_LEVEL", "ERROR").upper()
 logging.basicConfig(
     level=LOGLEVEL,
     stream=sys.stdout,

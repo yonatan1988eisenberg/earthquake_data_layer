@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, status
 from uvicorn import run
 
 from collect import DoneCollectingError, StorageConnectionError, run_collection
@@ -21,14 +21,17 @@ def collect(run_id: str):
 
     settings.logger.info(f"incoming get request at /collect/{run_id}")
 
+    if settings.INTEGRATION_TEST:
+        return {"result": "test_result", "status": status.HTTP_200_OK}
+
     try:
         result = run_collection(run_id)
         settings.logger.info("Success! return results")
-        return {"result": result, "status": "success"}
+        return {"result": result, "status": status.HTTP_200_OK}
 
     except DoneCollectingError:
         settings.logger.info("It looks like we're done collecting..")
-        return {"result": "done_collecting", "status": "success"}
+        return {"result": "done_collecting", "status": status.HTTP_200_OK}
 
     except StorageConnectionError as error:
         settings.logger.critical(f"Could not connect to the cloud:\n {error}")
