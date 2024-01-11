@@ -1,0 +1,10 @@
+services:
+  earthquake_data_layer:
+    image: ${LOCAL_IMAGE_NAME}
+    ports:
+      - "${EDL_ENDPOINT}:${EDL_PORT}:${EDL_PORT}"
+    environment:
+      - INTEGRATION_TEST=true
+      - EDL_ENDPOINT=${EDL_ENDPOINT}
+      - EDL_PORT=${EDL_PORT}
+      - LOGLEVEL=ERROR

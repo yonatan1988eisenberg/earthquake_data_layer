@@ -1,0 +1,17 @@
+name: CD-Deploy
+on:
+  push:
+    branches:
+      - 'prod'
+  pull_request:
+    branches:
+      - 'prod'
+
+jobs:
+    release:
+      runs-on: ubuntu-latest
+      steps:
+      - name: checkout repo
+        uses: actions/checkout@main
+      - name: release new version to hub
+        run: make release
