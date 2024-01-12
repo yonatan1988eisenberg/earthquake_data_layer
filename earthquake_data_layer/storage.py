@@ -169,9 +169,14 @@ class Storage:
             client = self.client
 
         try:
-            client.delete_object(Bucket=bucket_name, Key=key)
-            settings.logger.info(f"Object removed successfully: {key}")
-            return True
+            if key in self.list_objects(bucket_name, key):
+                client.delete_object(Bucket=bucket_name, Key=key)
+                settings.logger.info(f"Object removed successfully: {key}")
+                return True
+            settings.logger.info(
+                f"The object {key} is not in the bucket {bucket_name}, can't remove it"
+            )
+            return False
         except ClientError as e:
             settings.logger.error(f"Error removing object: {e}")
             return False

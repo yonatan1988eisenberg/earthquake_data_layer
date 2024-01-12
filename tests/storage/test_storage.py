@@ -44,7 +44,7 @@ def test_removing_existing_and_nonexistent_objects(storage, test_bucket):
     assert file_key not in storage.list_objects(test_bucket)
 
     # Test removing a non-existing object
-    assert not storage.remove_object("nonexistent-file")
+    assert not storage.remove_object("nonexistent-file", test_bucket)
 
 
 def test_saving_objects_from_bytes_and_file_path(storage, test_bucket):
