@@ -45,10 +45,18 @@ repos:
   hooks:
     - id: pytest-check
       name: pytest-check
-      entry: pytest
+      entry: coverage run -m pytest
       language: system
       pass_filenames: false
       always_run: true
       args: [
         "tests/"
       ]
+
+    - id: coverage-report
+      name: coverage-report
+      entry: coverage report --omit="tests/*"
+      language: system
+      pass_filenames: false
+      always_run: true
+      args: []

@@ -93,9 +93,8 @@ jobs:
       # run tests
       - name: Run tests
         run: |
-         source .venv/bin/activate
-         poetry run pytest tests/
-         coverage report
+         poetry run coverage run -m pytest
+         poetry run coverage report --omit="tests/*"
 
       # run integration tests
       - name: integration_test
