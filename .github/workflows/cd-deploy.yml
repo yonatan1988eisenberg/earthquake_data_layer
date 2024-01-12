@@ -10,9 +10,10 @@ jobs:
       steps:
       - name: checkout repo
         uses: actions/checkout@main
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: release latest version to hub
-        run: |
-          pwd
-          ls
-          cat Makefile
-          make release
+        run: make release
