@@ -11,4 +11,8 @@ jobs:
       - name: checkout repo
         uses: actions/checkout@main
       - name: release latest version to hub
-        run: make release
+        run: |
+          pwd
+          ls
+          cat Makefile
+          make release
