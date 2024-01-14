@@ -1,0 +1,6 @@
+.idea
+.env
+earthquake_data_layer/meta.json
+**__pycache__**
+*.pyc
+**/*.pyc

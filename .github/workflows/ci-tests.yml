@@ -2,11 +2,10 @@ name: CI-Tests
 on:
   pull_request:
     branches:
-      - 'develop'
-#env:
-#  AWS_DEFAULT_REGION: 'eu-west-1'
-#  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - 'dev'
+  push:
+    branches:
+      - 'dev'
 
 jobs:
   linting:
@@ -18,7 +17,7 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: 3.10.12
 
       # install & configure poetry
       - name: Install and configure Poetry
@@ -47,9 +46,9 @@ jobs:
         run: poetry install --no-interaction
       # install and run linters
       - run: |
-          pylint earthquake_data_layer/*
-          black . --check
-          isort .
+          poetry run pylint *
+          poetry run black . --check
+          poetry run isort .
 # ----------------
 #     TEStING
 # ----------------
@@ -63,7 +62,7 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: 3.10.12
 
       # install & configure poetry
       - name: Install and configure Poetry
@@ -94,6 +93,11 @@ jobs:
       # run tests
       - name: Run tests
         run: |
-         source .venv/bin/activate
-         pytest tests/
-         coverage report
+         poetry run coverage run -m pytest
+         poetry run coverage report --omit="tests/*"
+
+      # run integration tests
+      - name: integration_test
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: make integration_test
