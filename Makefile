@@ -19,11 +19,10 @@ _pusher:
 	docker push ${DOCKER_USER_NAME}/${APPLICATION_NAME}:${_BUILD_ARGS_TAG}
 
 _releaser:
-	echo "docker-user-name: ${DOCKERHUB_USERNAME}"
 	docker pull ${DOCKER_USER_NAME}/${APPLICATION_NAME}:${_BUILD_ARGS_TAG}
 	docker tag  ${DOCKER_USER_NAME}/${APPLICATION_NAME}:${_BUILD_ARGS_TAG} ${DOCKER_USER_NAME}/${APPLICATION_NAME}:latest
 	docker tag  ${DOCKER_USER_NAME}/${APPLICATION_NAME}:${_BUILD_ARGS_TAG} ${DOCKER_USER_NAME}/${APPLICATION_NAME}:${VERSION}
-	docker push ${DOCKER_USER_NAME}/${APPLICATION_NAME}:latest --all-tags
+	docker push ${DOCKER_USER_NAME}/${APPLICATION_NAME} --all-tags
 
 build:
 	# poetry lock
@@ -39,7 +38,6 @@ push: integration_test build
 	-e _BUILD_ARGS_TAG="$*${GIT_HASH}"
 
 release: push integration_test build
-	echo "docker-user-name: ${DOCKERHUB_USERNAME}"
 	$(MAKE) _releaser \
 	-e _BUILD_ARGS_TAG="$*${_BUILD_ARGS_TAG}" \
 	-e _BUILD_ARGS_RELEASE_TAG="$*latest"
