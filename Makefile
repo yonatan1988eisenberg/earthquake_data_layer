@@ -1,4 +1,4 @@
-DOCKER_USERNAME ?= ${DOCKERHUB_USERNAME}
+DOCKER_USERNAME ?= ${DOCKER_USERNAME}
 APPLICATION_NAME ?= earthquake_data_layer
 
 GIT_HASH ?= $(shell git log --format="%h" -n 1)
