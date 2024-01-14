@@ -53,10 +53,10 @@ repos:
         "tests/"
       ]
 
-#    - id: coverage-report
-#      name: coverage-report
-#      entry: coverage report --omit="tests/*"
-#      language: system
-#      pass_filenames: false
-#      always_run: true
-#      args: []
+    - id: coverage-report
+      name: coverage-report
+      entry: coverage report --omit="tests/*"
+      language: system
+      pass_filenames: false
+      always_run: true
+      args: []
