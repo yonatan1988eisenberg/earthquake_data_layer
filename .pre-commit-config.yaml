@@ -54,6 +54,7 @@ repos:
       ]
 
     - id: coverage-report
+      verbose: True
       name: coverage-report
       entry: coverage report --omit="tests/*"
       language: system
