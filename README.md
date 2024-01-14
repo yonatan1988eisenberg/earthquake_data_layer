@@ -24,6 +24,7 @@ The goal is to build a machine learning model that predicts earthquakes weekly a
 4. [Usage](#usage)
 5. [Contributing](#contributing)
 6. [License](#license)
+7. [Roadmap]()
 
 ## Responsibilities
 
@@ -141,3 +142,8 @@ Contributions are welcome! Please follow the contribution guidelines to contribu
 ### License
 
 This project is licensed under the MIT License. Feel free to use and modify the code according to your needs.
+
+
+### Roadmap
+Version 0.5 will be released when the collection workflow is ready
+version 1.0 will be released when the update workflow is ready

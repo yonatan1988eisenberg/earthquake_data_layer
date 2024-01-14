@@ -102,7 +102,7 @@ def run_collection(run_id: str):
         )
 
         # update runs.parquet
-        runs_metadata_updated = helpers.update_runs_metadata(run_metadata, connection)
+        runs_metadata_updated = helpers.add_rows_to_parquet(run_metadata, connection)
 
         # update metadata and save
         metadata_saved = helpers.updated_and_save_metadata(

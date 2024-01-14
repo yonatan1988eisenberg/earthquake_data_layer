@@ -43,11 +43,6 @@ class Preprocess:
     """
 
     @classmethod
-    def process_erred_response(cls, **kwargs):
-        # todo: implement and add tests
-        pass
-
-    @classmethod
     def process_response(
         cls,
         response: dict,
@@ -57,7 +52,10 @@ class Preprocess:
         count: int,
         columns: Counter,
         row_dates: Counter,
-    ) -> tuple[Optional[dict], Optional[list[dict]], list[str], int, Counter, Counter]:
+        erred_responses: list,
+    ) -> tuple[
+        Optional[dict], Optional[list[dict]], list[str], int, Counter, Counter, list
+    ]:
         """
         Process a single earthquake data response.
 
@@ -78,8 +76,9 @@ class Preprocess:
 
         # Check for errors
         if response.get("error"):
-            cls.process_erred_response()
-            return None, None, responses_ids, count, columns, row_dates
+            response["metadata"]["run_id"] = run_id
+            erred_responses.append(response)
+            return None, None, responses_ids, count, columns, row_dates, erred_responses
 
         # Extract response's components
         raw_response = response.get("raw_response", {})
@@ -89,8 +88,9 @@ class Preprocess:
             not len(raw_response.get("errors", [])) == 0
             or not raw_response.get("httpStatus") == 200
         ):
-            cls.process_erred_response()
-            return None, None, responses_ids, count, columns, row_dates
+            response["metadata"]["run_id"] = run_id
+            erred_responses.append(response)
+            return None, None, responses_ids, count, columns, row_dates, erred_responses
 
         metadata = response.get("metadata", {})
         data = raw_response.pop("data", [])
@@ -134,7 +134,15 @@ class Preprocess:
         # Update count
         count += metadata.get("count", 0) or len(processed_data)
 
-        return metadata, processed_data, responses_ids, count, columns, row_dates
+        return (
+            metadata,
+            processed_data,
+            responses_ids,
+            count,
+            columns,
+            row_dates,
+            erred_responses,
+        )
 
     @classmethod
     def get_next_run_dates(cls, row_dates: Counter) -> dict:
@@ -244,14 +252,15 @@ class Preprocess:
 
         settings.logger.info("Started preprocessing the responses")
 
-        responses_ids = []
+        responses_ids = list()
         columns = Counter()
         row_dates = Counter()
         count = 0
+        erred_responses = list()
 
         # process the responses
-        responses_metadata = []
-        three_d_data = []
+        responses_metadata = list()
+        three_d_data = list()
         for response in responses:
             (
                 metadata,
@@ -260,14 +269,28 @@ class Preprocess:
                 count,
                 columns,
                 row_dates,
+                erred_responses,
             ) = cls.process_response(
-                response, run_id, data_key, responses_ids, count, columns, row_dates
+                response,
+                run_id,
+                data_key,
+                responses_ids,
+                count,
+                columns,
+                row_dates,
+                erred_responses,
             )
 
             if metadata is not None:
                 responses_metadata.append(metadata)
             if two_dim_data is not None:
                 three_d_data.append(two_dim_data)
+
+        # upload erred responses
+        if len(erred_responses) > 0:
+            helpers.add_rows_to_parquet(
+                rows=erred_responses, key=definitions.ERRED_RESPONSES_KEY
+            )
 
         # calculate new dates for the next run
         next_run_dates = cls.get_next_run_dates(row_dates)

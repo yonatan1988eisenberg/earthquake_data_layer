@@ -1,4 +1,4 @@
-# pylint: disable=use-a-generator
+# pylint: disable=use-a-generator, redefined-outer-name, unused-import, duplicate-code
 from collections import Counter
 from copy import deepcopy
 
@@ -12,6 +12,7 @@ def test_process_response(sample_response, num_rows, num_cols):
     count = 0
     columns = Counter()
     row_dates = Counter()
+    erred_responses = list()
 
     (
         metadata,
@@ -20,8 +21,16 @@ def test_process_response(sample_response, num_rows, num_cols):
         count,
         columns,
         row_dates,
+        erred_responses,
     ) = Preprocess.process_response(
-        sample_response, run_id, data_key, responses_ids, count, columns, row_dates
+        sample_response,
+        run_id,
+        data_key,
+        responses_ids,
+        count,
+        columns,
+        row_dates,
+        erred_responses,
     )
 
     assert "response_id" in metadata
@@ -59,6 +68,7 @@ def test_bundle(sample_response, inverted_sample_response, num_rows, num_cols):
     count = 0
     columns = Counter()
     row_dates = Counter()
+    erred_responses = list()
     mode = "collection"
     double_col_names = min(num_rows, num_cols)
 
@@ -74,8 +84,16 @@ def test_bundle(sample_response, inverted_sample_response, num_rows, num_cols):
             count,
             columns,
             row_dates,
+            erred_responses,
         ) = Preprocess.process_response(
-            response, run_id, data_key, responses_ids, count, columns, row_dates
+            response,
+            run_id,
+            data_key,
+            responses_ids,
+            count,
+            columns,
+            row_dates,
+            erred_responses,
         )
         responses_metadata.append(metadata)
         three_d_data.append(data)
@@ -110,6 +128,7 @@ def test_bundle(sample_response, inverted_sample_response, num_rows, num_cols):
     assert columns["response_id"] == count
     assert columns["date"] == count
     assert data == three_d_data[0] + three_d_data[1]
+    assert len(erred_responses) == 0
 
 
 def verify_row(row: dict, data: list[dict]):

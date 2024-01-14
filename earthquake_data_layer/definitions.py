@@ -12,6 +12,7 @@ METADATA_FILE = "metadata.json"
 METADATA_LOCATION = Path(__file__).parent.joinpath(METADATA_FILE)
 METADATA_KEY = "metadata.json"
 RUNS_METADATA_KEY = "data/runs/runs.parquet"
+ERRED_RESPONSES_KEY = "data/raw_data/erred_responses.parquet"
 
 # fixed time and date format
 TODAY = datetime.datetime.now()

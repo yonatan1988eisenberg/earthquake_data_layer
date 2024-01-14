@@ -4,7 +4,7 @@ import random
 import string
 from copy import deepcopy
 from random import choice
-from typing import Union
+from typing import Optional, Union
 
 import pandas as pd
 import pyarrow as pa
@@ -85,8 +85,10 @@ def upload_df(df: pd.DataFrame, key: str, storage: Storage) -> bool:
     return storage.save_object(bytes(writer.getvalue()), key)
 
 
-def update_runs_metadata(
-    run_metadata: dict, storage: Storage, key: str = definitions.RUNS_METADATA_KEY
+def add_rows_to_parquet(
+    rows: Union[dict, list[dict]],
+    storage: Optional[Storage] = None,
+    key: str = definitions.RUNS_METADATA_KEY,
 ) -> bool:
     """
     Updates the runs metadata file in the storage with a new line run_metadata.
@@ -99,16 +101,21 @@ def update_runs_metadata(
     Returns:
     bool: True if the update is successful, False otherwise.
     """
+
+    if storage is None:
+        storage = Storage()
+
+    if isinstance(rows, dict):
+        rows = [rows]
+
     # load the file from storage and append the new line to it
     try:
         df = pd.read_parquet(storage.load_object(key))
-        df = pd.concat(
-            [df, pd.DataFrame.from_records([run_metadata])], ignore_index=True
-        )
+        df = pd.concat([df, pd.DataFrame.from_records(rows)], ignore_index=True)
     # if the file doesn't exist (first run)
     except FileNotFoundError:
         logger.error("Couldn't find runs.parquet")
-        df = pd.DataFrame.from_records([run_metadata])
+        df = pd.DataFrame.from_records(rows)
 
     # upload to storage
     return upload_df(df, key, storage)
