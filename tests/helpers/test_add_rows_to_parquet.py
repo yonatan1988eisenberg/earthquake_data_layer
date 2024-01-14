@@ -1,4 +1,3 @@
-# pylint: disable=redefined-outer-name, unused-import
 from io import BytesIO
 from unittest.mock import patch
 

@@ -1,4 +1,4 @@
-# pylint: disable=use-a-generator, redefined-outer-name, unused-import, duplicate-code
+# pylint: disable=use-a-generator, duplicate-code
 from collections import Counter
 from copy import deepcopy
 
