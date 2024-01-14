@@ -1,4 +1,4 @@
-DOCKER_USER_NAME ?= $(DOCKER_USERNAME)
+DOCKER_USER_NAME ?= ${DOCKERHUB_USERNAME}
 APPLICATION_NAME ?= earthquake_data_layer
 
 GIT_HASH ?= $(shell git log --format="%h" -n 1)
@@ -19,7 +19,7 @@ _pusher:
 	docker push ${DOCKER_USER_NAME}/${APPLICATION_NAME}:${_BUILD_ARGS_TAG}
 
 _releaser:
-	echo "docker-user-name: ${DOCKER_USER_NAME}"
+	echo "docker-user-name: ${DOCKERHUB_USERNAME}"
 	docker pull ${DOCKER_USER_NAME}/${APPLICATION_NAME}:${_BUILD_ARGS_TAG}
 	docker tag  ${DOCKER_USER_NAME}/${APPLICATION_NAME}:${_BUILD_ARGS_TAG} ${DOCKER_USER_NAME}/${APPLICATION_NAME}:latest
 	docker tag  ${DOCKER_USER_NAME}/${APPLICATION_NAME}:${_BUILD_ARGS_TAG} ${DOCKER_USER_NAME}/${APPLICATION_NAME}:${VERSION}
@@ -39,7 +39,7 @@ push: integration_test build
 	-e _BUILD_ARGS_TAG="$*${GIT_HASH}"
 
 release: push integration_test build
-	echo "docker-user-name: ${DOCKER_USER_NAME}"
+	echo "docker-user-name: ${DOCKERHUB_USERNAME}"
 	$(MAKE) _releaser \
 	-e _BUILD_ARGS_TAG="$*${_BUILD_ARGS_TAG}" \
 	-e _BUILD_ARGS_RELEASE_TAG="$*latest"
