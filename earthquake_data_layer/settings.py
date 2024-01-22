@@ -54,7 +54,7 @@ API_HOST = os.getenv("API_HOST", None)
 API_KEYs = get_api_keys()
 
 # earthquake data layer creds
-EDL_ENDPOINT = os.getenv("EDL_ENDPOINT", "127.0.0.1")
+EDL_ENDPOINT = os.getenv("EDL_ENDPOINT", "0.0.0.0")
 EDL_PORT = os.getenv("EDL_PORT", "9000")
 
 # aws

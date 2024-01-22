@@ -13,7 +13,7 @@ setup:
 	poetry install --without dev
 
 _builder:
-	docker build --tag ${DOCKER_USER_NAME}/${APPLICATION_NAME}:${_BUILD_ARGS_TAG} -f ${_BUILD_ARGS_DOCKERFILE} .
+	docker build --tag ${APPLICATION_NAME}:${_BUILD_ARGS_TAG} -f ${_BUILD_ARGS_DOCKERFILE} .
 
 _pusher:
 	docker push ${DOCKER_USER_NAME}/${APPLICATION_NAME}:${_BUILD_ARGS_TAG}
@@ -31,7 +31,7 @@ build:
 	-e _BUILD_ARGS_DOCKERFILE="Dockerfile"
 
 integration_test: build
-	LOCAL_IMAGE_NAME=${DOCKER_USER_NAME}/${APPLICATION_NAME}:${_BUILD_ARGS_TAG} bash integration_tests/run.sh
+	LOCAL_IMAGE_NAME=${APPLICATION_NAME}:${_BUILD_ARGS_TAG} bash integration_tests/run.sh
 
 push: integration_test build
 	$(MAKE) _pusher \
