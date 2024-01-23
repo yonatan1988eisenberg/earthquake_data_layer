@@ -1,8 +1,8 @@
 # Project README
 
-## Earthquake Prediction System
+## Earthquake Data Layer
 
-Welcome to the Earthquake Prediction System project! This system is designed to collect earthquake data from an API,
+Welcome to the Earthquake Data Layer! This project is designed to collect earthquake data from an API,
 update the dataset periodically and handle storage operations.<br>
 The goal is to build a machine learning model that predicts earthquakes weekly and provides insights into seismic activities.
 
