@@ -1,8 +1,8 @@
 DOCKER_USER_NAME ?= ${DOCKERHUB_USERNAME}
-APPLICATION_NAME ?= earthquake_data_layer
 
 GIT_HASH ?= $(shell git log --format="%h" -n 1)
 VERSION := $(shell grep -m 1 version pyproject.toml | tr -s ' ' | tr -d '"' | tr -d "'" | cut -d' ' -f3)
+APPLICATION_NAME ?= $(shell grep -m 1 name pyproject.toml | tr -s ' ' | tr -d '"' | tr -d "'" | cut -d' ' -f3)
 _BUILD_ARGS_TAG ?= $(GIT_HASH)
 _BUILD_ARGS_RELEASE_TAG ?= latest
 _BUILD_ARGS_DOCKERFILE ?= Dockerfile
