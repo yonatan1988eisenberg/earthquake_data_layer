@@ -1,8 +1,13 @@
 from fastapi import FastAPI, HTTPException, status
 from uvicorn import run
 
-from collect import DoneCollectingError, StorageConnectionError, run_collection
+from collect import run_collection
 from earthquake_data_layer import settings
+from earthquake_data_layer.exceptions import (
+    DoneCollectingError,
+    RemainingRequestsError,
+    StorageConnectionError,
+)
 
 app = FastAPI()
 
@@ -33,6 +38,10 @@ def collect(run_id: str):
         settings.logger.info("It looks like we're done collecting..")
         return {"result": "done_collecting", "status": status.HTTP_200_OK}
 
+    except RemainingRequestsError as error:
+        settings.logger.info("No remaining API calls")
+        raise HTTPException(status_code=502, detail=str(error)) from error
+
     except StorageConnectionError as error:
         settings.logger.critical(f"Could not connect to the cloud:\n {error}")
         raise HTTPException(status_code=501, detail=str(error)) from error
@@ -48,7 +57,7 @@ def collect(run_id: str):
 
 def start():
     settings.logger.info("Starting app")
-    run(app, host=settings.EDL_ENDPOINT, port=settings.EDL_PORT)
+    run(app, host=settings.DATA_LAYER_URL, port=int(settings.DATA_LAYER_PORT))
 
 
 if __name__ == "__main__":

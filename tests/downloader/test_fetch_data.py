@@ -2,7 +2,15 @@ from copy import deepcopy
 from dataclasses import dataclass
 from unittest.mock import MagicMock, patch
 
-from earthquake_data_layer import Downloader, MetadataManager, definitions, settings
+import pytest
+
+from earthquake_data_layer import (
+    Downloader,
+    MetadataManager,
+    definitions,
+    exceptions,
+    settings,
+)
 
 
 @dataclass
@@ -14,12 +22,18 @@ class MockApiResponse:
 
 
 def test_fetch_data_no_requests_params(blank_metadata):
+    mock_metadata = deepcopy(blank_metadata)
+    mock_metadata["keys"] = {
+        "key1": {definitions.TODAY.strftime(definitions.DATE_FORMAT): 0},
+        "key2": {definitions.TODAY.strftime(definitions.DATE_FORMAT): 0},
+    }
+
     downloader = Downloader(
-        metadata_manager=MetadataManager(blank_metadata), mode="collection"
+        metadata_manager=MetadataManager(mock_metadata), mode="collection"
     )
-    with patch.object(downloader, "generate_requests_params", return_value=([], [])):
-        result = downloader.fetch_data()
-        assert not result
+    with patch.object(settings, "API_KEYs", {"key1": "api_key1", "key2": "api_key2"}):
+        with pytest.raises(exceptions.RemainingRequestsError):
+            _ = downloader.fetch_data()
 
 
 def test_fetch_data(blank_metadata, sample_response, inverted_sample_response):

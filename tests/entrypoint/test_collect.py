@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from collect import DoneCollectingError, StorageConnectionError
+from earthquake_data_layer.exceptions import DoneCollectingError, StorageConnectionError
 
 
 def test_collect_success(client):
