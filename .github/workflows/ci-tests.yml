@@ -99,5 +99,5 @@ jobs:
       # run integration tests
       - name: integration_test
         env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_NICKNAME: ${{ secrets.DOCKERHUB_NICKNAME }}
         run: make integration_test

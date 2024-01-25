@@ -37,7 +37,7 @@ EARLIEST_EARTHQUAKE_DATE = "1900-01-01"
 # data point types to fetch, more details can be found at the API homepage
 DATA_TYPE_TO_FETCH = "earthquake"
 # how many requests to leave in each key when collecting
-REQUESTS_TOLERANCE = 5
+REQUESTS_TOLERANCE = int(os.getenv("REQUESTS_TOLERANCE", "0"))
 
 """ Metadata Location """
 LOCAL_METADATA = False
@@ -54,8 +54,8 @@ API_HOST = os.getenv("API_HOST", None)
 API_KEYs = get_api_keys()
 
 # earthquake data layer creds
-EDL_ENDPOINT = os.getenv("EDL_ENDPOINT", "0.0.0.0")
-EDL_PORT = os.getenv("EDL_PORT", "9000")
+DATA_LAYER_URL = os.getenv("DATA_LAYER_URL", "0.0.0.0")
+DATA_LAYER_PORT = os.getenv("DATA_LAYER_PORT", "9000")
 
 # aws
 AWS_S3_ENDPOINT = os.getenv("AWS_S3_ENDPOINT", None)

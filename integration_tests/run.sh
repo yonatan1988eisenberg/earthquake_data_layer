@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # EDL = earthquake_data_layer
-export EDL_ENDPOINT=0.0.0.0
-export EDL_PORT=1317
+export DATA_LAYER_URL=0.0.0.0
+export DATA_LAYER_PORT=1317
 export INTEGRATION_TEST=true
 
 # cd to script directory
@@ -14,7 +14,7 @@ docker-compose up -d
 sleep 5
 
 # run tests
-status_code=$(curl --write-out %{http_code} --silent --output /dev/null ${EDL_ENDPOINT}:${EDL_PORT}/collect/sample_id)
+status_code=$(curl --write-out %{http_code} --silent --output /dev/null ${DATA_LAYER_URL}:${DATA_LAYER_PORT}/collect/sample_id)
 
 # resume original state
 docker-compose down

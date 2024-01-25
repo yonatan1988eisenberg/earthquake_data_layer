@@ -1,13 +1,12 @@
 import datetime
 import os
-import sys
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from typing import Literal, Optional, Union
 
 import requests
 
-from earthquake_data_layer import definitions, settings
+from earthquake_data_layer import definitions, exceptions, settings
 from earthquake_data_layer.helpers import is_valid_date, key_api2name
 from earthquake_data_layer.metadata_manager import MetadataManager
 
@@ -236,6 +235,9 @@ class Downloader:
                 break
 
         settings.logger.info("generated the requests parameters")
+        settings.logger.debug(f"expected requests: {len(requests_params)}")
+        if len(requests_params) == 0:
+            raise exceptions.RemainingRequestsError("No API calls remaining")
 
         # Returning the lists of request parameters and headers
         return requests_params, headers
@@ -331,6 +333,8 @@ class Downloader:
 
             return api_responses
 
+        # except exceptions.RemainingRequestsError:
+        #     raise
         except Exception as error:
             settings.logger.critical(f"Encountered an error:\n{error}")
-            sys.exit(1)
+            raise

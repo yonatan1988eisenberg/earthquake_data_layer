@@ -9,7 +9,16 @@
 
 # Files or directories to be skipped. They should be base names, not
 # paths.
-ignore=CVS
+ignore=CVS,
+    README.md,
+    poetry.lock,
+    pyproject.toml,
+    Makefile,
+    Dockerfile,
+    change_log.md,
+    git-filter-repo,
+    expressions.txt,
+    todos.py,
 
 # Add files or directories matching the regex patterns to the ignore-list. The
 # regex matches against paths and can be in Posix or Windows format.
@@ -19,7 +28,10 @@ ignore-paths=
     pyproject.toml,
     Makefile,
     Dockerfile,
-    change_log.md
+    change_log.md,
+    git-filter-repo,
+    expressions.txt,
+    todos.py,
 
 # Files or directories matching the regex patterns are skipped. The regex
 # matches against base names, not paths.

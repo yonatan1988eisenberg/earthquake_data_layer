@@ -6,6 +6,7 @@ on:
 
 jobs:
     release:
+      if: ${{ !github.event.act }} # skip during local actions testing
       runs-on: ubuntu-latest
       steps:
       - name: checkout repo

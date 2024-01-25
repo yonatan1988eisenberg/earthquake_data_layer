@@ -6,7 +6,7 @@ from earthquake_data_layer import Downloader, MetadataManager, definitions, sett
 
 def test_generate_requests_params_collection(blank_metadata):
 
-    remaining_requests = 100
+    remaining_requests = definitions.MAX_REQUESTS_PER_DAY
     mock_metadata = deepcopy(blank_metadata)
     mock_metadata["keys"] = {
         "key1": {
