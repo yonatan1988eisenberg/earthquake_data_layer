@@ -18,5 +18,5 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: release latest version to hub
         env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_NICKNAME }}
         run: make release
