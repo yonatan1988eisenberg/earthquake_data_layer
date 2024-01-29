@@ -54,7 +54,7 @@ API_HOST = os.getenv("API_HOST", None)
 API_KEYs = get_api_keys()
 
 # earthquake data layer creds
-DATA_LAYER_URL = os.getenv("DATA_LAYER_URL", "0.0.0.0")
+DATA_LAYER_ENDPOINT = os.getenv("DATA_LAYER_ENDPOINT", "localhost")
 DATA_LAYER_PORT = os.getenv("DATA_LAYER_PORT", "9000")
 
 # aws
@@ -74,4 +74,7 @@ logging.basicConfig(
     stream=sys.stdout,
     format="""%(name)s :: %(levelname)-8s :: %(asctime)s %(filename)s:%(lineno)d -30s %(message)s""",
 )
-logger = logging.getLogger("EDL")
+json_handler = logging.StreamHandler()
+logger = logging.getLogger(__name__)
+logger.addHandler(json_handler)
+logger.setLevel(LOGLEVEL)

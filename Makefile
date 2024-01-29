@@ -1,3 +1,4 @@
+DOCKERHUB_NICKNAME?="docker_user"
 DOCKERHUB_NICK_NAME=${DOCKERHUB_NICKNAME}
 
 GIT_HASH ?= $(shell git log --format="%h" -n 1)
