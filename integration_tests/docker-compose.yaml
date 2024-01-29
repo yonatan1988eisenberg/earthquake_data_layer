@@ -5,6 +5,6 @@ services:
       - "${DATA_LAYER_PORT}:${DATA_LAYER_PORT}"
     environment:
       - INTEGRATION_TEST=true
-      - DATA_LAYER_URL=${DATA_LAYER_URL}
+      - DATA_LAYER_ENDPOINT=${DATA_LAYER_ENDPOINT}
       - DATA_LAYER_PORT=${DATA_LAYER_PORT}
       - LOG_LEVEL=ERROR
