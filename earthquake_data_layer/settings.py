@@ -54,7 +54,7 @@ API_HOST = os.getenv("API_HOST", None)
 API_KEYs = get_api_keys()
 
 # earthquake data layer creds
-DATA_LAYER_URL = os.getenv("DATA_LAYER_URL", "0.0.0.0")
+DATA_LAYER_ENDPOINT = os.getenv("DATA_LAYER_ENDPOINT", "localhost")
 DATA_LAYER_PORT = os.getenv("DATA_LAYER_PORT", "9000")
 
 # aws

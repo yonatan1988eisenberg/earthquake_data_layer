@@ -14,7 +14,7 @@ app = FastAPI()
 
 @app.get("/", description="healthcheck")
 def read_root():
-    return {"message": "Up and running", "status": "success"}
+    return {"message": "Up and running", "status": status.HTTP_200_OK}
 
 
 @app.get(
@@ -57,7 +57,7 @@ def collect(run_id: str):
 
 def start():
     settings.logger.info("Starting app")
-    run(app, host=settings.DATA_LAYER_URL, port=int(settings.DATA_LAYER_PORT))
+    run(app, host=settings.DATA_LAYER_ENDPOINT, port=int(settings.DATA_LAYER_PORT))
 
 
 if __name__ == "__main__":
