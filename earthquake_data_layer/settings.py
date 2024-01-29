@@ -74,4 +74,7 @@ logging.basicConfig(
     stream=sys.stdout,
     format="""%(name)s :: %(levelname)-8s :: %(asctime)s %(filename)s:%(lineno)d -30s %(message)s""",
 )
-logger = logging.getLogger("EDL")
+json_handler = logging.StreamHandler()
+logger = logging.getLogger(__name__)
+logger.addHandler(json_handler)
+logger.setLevel(LOGLEVEL)
