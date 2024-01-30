@@ -88,8 +88,11 @@ class Downloader:
                 )
 
             keys_metadata[key_name] = (api_key, remaining_requests)
-
-        settings.logger.debug(f"calculated keys_metadata:\n{keys_metadata}")
+        log_keys = {
+            key_name: (api_key[:5] + "***", remaining_requests)
+            for key_name, (api_key, remaining_requests) in keys_metadata.items()
+        }
+        settings.logger.debug(f"calculated keys_metadata:\n{log_keys}")
 
         return keys_metadata
 
