@@ -71,9 +71,13 @@ def run_collection(run_id: str):
 
         # preprocess
         data_key = helpers.generate_data_key(run_id)
-        run_metadata, responses_metadata, data = Preprocess.preprocess(
-            responses, run_id, data_key
-        )
+        try:
+            run_metadata, responses_metadata, data = Preprocess.preprocess(
+                responses, run_id, data_key
+            )
+        except exceptions.NoHealthyRequestsError:
+            settings.logger.critical("couldn't fetch healthy responses")
+            raise
 
         # validate
         run_metadata["validation_report"] = Validate.validate(
@@ -124,5 +128,7 @@ def run_collection(run_id: str):
                 Metadata saved: {metadata_saved}"""
             )
     except Exception as e:
-        settings.logger.error(f"An error occurred during the data collection run: {e}")
+        settings.logger.error(
+            f"An error occurred during the data collection run: {e.__traceback__}"
+        )
         raise

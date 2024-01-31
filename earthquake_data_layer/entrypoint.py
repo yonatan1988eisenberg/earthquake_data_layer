@@ -5,6 +5,7 @@ from collect import run_collection
 from earthquake_data_layer import settings
 from earthquake_data_layer.exceptions import (
     DoneCollectingError,
+    NoHealthyRequestsError,
     RemainingRequestsError,
     StorageConnectionError,
 )
@@ -23,7 +24,6 @@ def read_root():
     "returns the run_id if successful, raises an exception otherwise",
 )
 def collect(run_id: str):
-
     settings.logger.info(f"incoming get request at /collect/{run_id}")
 
     if settings.INTEGRATION_TEST:
@@ -42,16 +42,24 @@ def collect(run_id: str):
         settings.logger.info("No remaining API calls")
         raise HTTPException(status_code=502, detail=str(error)) from error
 
+    except NoHealthyRequestsError as error:
+        settings.logger.info("couldn't fetch healthy responses")
+        raise HTTPException(status_code=503, detail=str(error)) from error
+
     except StorageConnectionError as error:
-        settings.logger.critical(f"Could not connect to the cloud:\n {error}")
+        settings.logger.critical(
+            f"Could not connect to the cloud:\n {error.__traceback__}"
+        )
         raise HTTPException(status_code=501, detail=str(error)) from error
 
     except RuntimeError as error:
-        settings.logger.critical(f"Encountered a Runtime Error:\n {error}")
+        settings.logger.critical(
+            f"Encountered a Runtime Error:\n {error.__traceback__}"
+        )
         raise HTTPException(status_code=501, detail=str(error)) from error
 
     except Exception as error:
-        settings.logger.critical(f"Encountered and error:\n {error}")
+        settings.logger.critical(f"Encountered and error:\n {error.__traceback__}")
         raise HTTPException(status_code=500, detail=str(error)) from error
 
 

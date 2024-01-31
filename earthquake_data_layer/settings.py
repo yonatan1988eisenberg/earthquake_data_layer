@@ -68,13 +68,12 @@ AWS_BUCKET_NAME = os.getenv("AWS_BUCKET_NAME", None)
 INTEGRATION_TEST = get_bool("INTEGRATION_TEST")
 
 """ Logging """
+LOGGER_NAME = os.getenv("LOGGER_NAME", "EDL")
 LOGLEVEL = os.getenv("LOG_LEVEL", "ERROR").upper()
+log_format = f"""{LOGGER_NAME}s :: %(levelname)-8s :: %(asctime)s %(filename)s:%(lineno)d -30s %(message)s"""
 logging.basicConfig(
-    level=LOGLEVEL,
     stream=sys.stdout,
-    format="""%(name)s :: %(levelname)-8s :: %(asctime)s %(filename)s:%(lineno)d -30s %(message)s""",
+    format=log_format,
 )
-json_handler = logging.StreamHandler()
 logger = logging.getLogger(__name__)
-logger.addHandler(json_handler)
 logger.setLevel(LOGLEVEL)
