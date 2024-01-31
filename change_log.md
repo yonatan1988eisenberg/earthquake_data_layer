@@ -1,5 +1,5 @@
 ### Version 0.5.0
-- The collection pipeline is ready for deployment, including:
+- The collection pipeline is ready for initial tests, including:
   - Metadata management
   - A-synchronized requests to the API
   - Preprocessing
@@ -9,6 +9,9 @@
 
 ### Version 0.5.1
 - Erred API requests are saved to a file in the storage
+
+### Version 0.5.2
+- minor bugs fix
 
 ### Roadmap
 #### Versions:

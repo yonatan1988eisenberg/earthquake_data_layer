@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "earthquake-data-layer"
-version = "0.5.1"
+version = "0.5.2"
 description = ""
 authors = ["Yonatan Eisenberg <yonatan.eis@gmail.com>"]
 readme = "README.md"
