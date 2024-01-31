@@ -1,5 +1,6 @@
 import datetime
-import os
+import math
+import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from typing import Literal, Optional, Union
@@ -322,12 +323,38 @@ class Downloader:
             requests_params, headers = self.generate_requests_params(
                 base_query_kwargs=base_query_kwargs
             )
-
+            # there is a rate limit of 10 requests per min.
             settings.logger.info("Starting calls to API.")
-            with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
-                api_responses = list(
-                    executor.map(self.get_api_response, requests_params, headers)
-                )
+
+            num_cycles = math.ceil(
+                len(requests_params) / definitions.MAX_REQUESTS_PER_MIN
+            )
+            api_responses = list()
+            for cycle in range(num_cycles):
+                cycle_requests_params = requests_params[
+                    definitions.MAX_REQUESTS_PER_MIN
+                    * cycle : definitions.MAX_REQUESTS_PER_MIN
+                    * (cycle + 1)
+                ]
+                cycle_headers = headers[
+                    definitions.MAX_REQUESTS_PER_MIN
+                    * cycle : definitions.MAX_REQUESTS_PER_MIN
+                    * (cycle + 1)
+                ]
+
+                with ThreadPoolExecutor(
+                    max_workers=definitions.MAX_REQUESTS_PER_MIN
+                ) as executor:
+                    cycle_api_responses = list(
+                        executor.map(
+                            self.get_api_response, cycle_requests_params, cycle_headers
+                        )
+                    )
+                api_responses.extend(cycle_api_responses)
+
+                # delay the next cycle 1 min if this isn't the last cycle
+                if cycle < num_cycles - 1:
+                    time.sleep(60)
 
             settings.logger.info("Finished calls to API.")
 
