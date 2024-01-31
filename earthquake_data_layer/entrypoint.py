@@ -2,8 +2,11 @@ from fastapi import FastAPI, status
 from uvicorn import run
 
 from earthquake_data_layer import settings
+from earthquake_data_layer.routes.collect import collect_router
 
 app = FastAPI()
+
+app.include_router(collect_router)
 
 
 @app.get("/", description="healthcheck")

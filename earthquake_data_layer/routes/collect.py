@@ -1,8 +1,8 @@
 # pylint: disable=raise-missing-from
-from fastapi import HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 
 from collect import run_collection
-from earthquake_data_layer import app, definitions, settings
+from earthquake_data_layer import definitions, settings
 from earthquake_data_layer.exceptions import (
     DoneCollectingError,
     NoHealthyRequestsError,
@@ -10,8 +10,10 @@ from earthquake_data_layer.exceptions import (
     StorageConnectionError,
 )
 
+collect_router = APIRouter()
 
-@app.get(
+
+@collect_router.get(
     "/collect/{run_id}",
     description="used to initialize a data collection run. "
     "returns the run_id if successful, raises an exception otherwise",
