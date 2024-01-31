@@ -8,3 +8,7 @@ class StorageConnectionError(Exception):
 
 class RemainingRequestsError(Exception):
     pass
+
+
+class NoHealthyRequestsError(Exception):
+    pass

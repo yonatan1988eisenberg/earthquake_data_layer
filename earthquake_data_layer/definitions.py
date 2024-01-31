@@ -6,6 +6,7 @@ from pathlib import Path
 API_URL = "https://everyearthquake.p.rapidapi.com/earthquakesByDate"
 MAX_RESULTS_PER_REQUEST = 1000
 MAX_REQUESTS_PER_DAY = 150
+MAX_REQUESTS_PER_MIN = 10
 
 # metadata locations
 METADATA_FILE = "metadata.json"
@@ -66,3 +67,8 @@ SEEN_COLUMNS = [
     "timezone",
     "locationDetails",
 ]
+
+# API status codes
+HTTP_NO_REMAINING_API_CALLS = 460
+HTTP_COULDNT_FETCH_HEALTHY_RESPONSES = 461
+HTTP_COULDNT_CONNECT_TO_STORAGE = 462

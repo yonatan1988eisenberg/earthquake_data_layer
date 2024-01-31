@@ -3,7 +3,7 @@ import itertools
 from collections import Counter
 from typing import Literal, Optional
 
-from earthquake_data_layer import definitions, helpers, settings
+from earthquake_data_layer import definitions, exceptions, helpers, settings
 from earthquake_data_layer.helpers import is_valid_date
 
 
@@ -155,7 +155,7 @@ class Preprocess:
         Returns:
         dict: Dictionary containing the earliest date and offset.
         """
-
+        # todo: there is an error here fix it (maybe cuz counter is empty)
         earliest_date = next(iter(sorted(row_dates)))
         offset = row_dates[earliest_date]
 
@@ -291,6 +291,10 @@ class Preprocess:
             helpers.add_rows_to_parquet(
                 rows=erred_responses, key=definitions.ERRED_RESPONSES_KEY
             )
+
+        # raise a special exception if no healthy responses were fetched
+        if len(responses_metadata) == 0:
+            raise exceptions.NoHealthyRequestsError("couldn't fetch healthy responses")
 
         # calculate new dates for the next run
         next_run_dates = cls.get_next_run_dates(row_dates)
