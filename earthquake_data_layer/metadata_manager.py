@@ -1,4 +1,3 @@
-import datetime
 import json
 from typing import Optional, Union
 
@@ -14,6 +13,21 @@ class MetadataManager:
     The class responsibilities include fetching, updating, and saving metadata.
     It provides methods for retrieving information such as collection dates,
     remaining requests for API keys, and updating these values.
+
+    metadata structure:
+    {
+    "collection_dates": {"start_date": YYYY-MM-DD,
+                         "end_date": YYYY-MM-DD,
+                         "offset": int,
+                         "collection_start_date": YYYY-MM-DD
+                        },
+    "keys": {key_name1: {YYYY-MM-DD: int (num of remaining requests for that date)},
+             key_name2: {YYYY-MM-DD: int},
+             .
+             .
+             .}
+
+    }
 
     Attributes:
     - local (bool): Flag indicating whether to use local storage (default is settings.LOCAL_METADATA).
@@ -274,7 +288,7 @@ class MetadataManager:
         keys = self.metadata.get("keys", {})
 
         # update key metadata
-        today = datetime.date.today().strftime(definitions.DATE_FORMAT)
+        today = definitions.TODAY.strftime(definitions.DATE_FORMAT)
         keys[key] = {today: requests}
 
         # update metadata
