@@ -1,8 +1,9 @@
+# pylint: disable=raise-missing-from
 from fastapi import FastAPI, HTTPException, status
 from uvicorn import run
 
 from collect import run_collection
-from earthquake_data_layer import settings
+from earthquake_data_layer import definitions, settings
 from earthquake_data_layer.exceptions import (
     DoneCollectingError,
     NoHealthyRequestsError,
@@ -38,29 +39,44 @@ def collect(run_id: str):
         settings.logger.info("It looks like we're done collecting..")
         return {"result": "done_collecting", "status": status.HTTP_200_OK}
 
-    except RemainingRequestsError as error:
+    except RemainingRequestsError:
         settings.logger.info("No remaining API calls")
-        raise HTTPException(status_code=502, detail=str(error)) from error
+        raise HTTPException(
+            status_code=definitions.HTTP_NO_REMAINING_API_CALLS,
+            detail="No remaining API calls",
+        )
 
-    except NoHealthyRequestsError as error:
+    except NoHealthyRequestsError:
         settings.logger.info("couldn't fetch healthy responses")
-        raise HTTPException(status_code=503, detail=str(error)) from error
+        raise HTTPException(
+            status_code=definitions.HTTP_COULDNT_FETCH_HEALTHY_RESPONSES,
+            detail="couldn't fetch healthy responses",
+        )
 
     except StorageConnectionError as error:
         settings.logger.critical(
             f"Could not connect to the cloud:\n {error.__traceback__}"
         )
-        raise HTTPException(status_code=501, detail=str(error)) from error
+        raise HTTPException(
+            status_code=definitions.HTTP_COULDNT_CONNECT_TO_STORAGE,
+            detail="Could not connect to the cloud",
+        )
 
     except RuntimeError as error:
         settings.logger.critical(
             f"Encountered a Runtime Error:\n {error.__traceback__}"
         )
-        raise HTTPException(status_code=501, detail=str(error)) from error
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Encountered a Runtime Error",
+        )
 
     except Exception as error:
-        settings.logger.critical(f"Encountered and error:\n {error.__traceback__}")
-        raise HTTPException(status_code=500, detail=str(error)) from error
+        settings.logger.critical(f"Encountered an error:\n {error.__traceback__}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Encountered an error",
+        )
 
 
 def start():

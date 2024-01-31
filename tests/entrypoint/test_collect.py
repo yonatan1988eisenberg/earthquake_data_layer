@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from earthquake_data_layer import definitions
 from earthquake_data_layer.exceptions import DoneCollectingError, StorageConnectionError
 
 
@@ -47,10 +48,7 @@ def test_collect_storage_connection_error(client):
         response = client.get("/collect/some_run_id")
 
     # Assert that the response status code is 501 (HTTPException status_code for StorageConnectionError)
-    assert response.status_code == 501
-
-    # Assert that the response JSON contains the expected error message
-    assert response.json() == {"detail": "Connection error"}
+    assert response.status_code == definitions.HTTP_COULDNT_CONNECT_TO_STORAGE
 
 
 def test_collect_generic_error(client):
@@ -65,6 +63,3 @@ def test_collect_generic_error(client):
 
     # Assert that the response status code is 500 (HTTPException status_code for generic error)
     assert response.status_code == 500
-
-    # Assert that the response JSON contains the expected error message
-    assert response.json() == {"detail": "Some error"}
