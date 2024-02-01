@@ -18,7 +18,7 @@ def test_collect_success(client):
     assert response.status_code == 200
 
     # Assert that the response JSON contains the expected result and status
-    assert response.json() == {"result": "some_result", "status": 200}
+    assert response.json() == {"result": "some_result", "status_code": 200}
 
 
 def test_collect_done_collecting(client):
@@ -35,7 +35,7 @@ def test_collect_done_collecting(client):
     assert response.status_code == 200
 
     # Assert that the response JSON contains the expected result and status
-    assert response.json() == {"result": "done_collecting", "status": 200}
+    assert response.json() == {"result": "done_collecting", "status_code": 200}
 
 
 def test_collect_storage_connection_error(client):

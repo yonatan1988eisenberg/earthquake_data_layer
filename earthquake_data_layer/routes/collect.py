@@ -22,16 +22,15 @@ def collect(run_id: str):
     settings.logger.info(f"incoming get request at /collect/{run_id}")
 
     if settings.INTEGRATION_TEST:
-        return {"result": "test_result", "status": status.HTTP_200_OK}
-
+        return {"result": "test_result", "status_code": status.HTTP_200_OK}
     try:
         result = run_collection(run_id)
         settings.logger.info("Success! return results")
-        return {"result": result, "status": status.HTTP_200_OK}
+        return {"result": result, "status_code": status.HTTP_200_OK}
 
     except DoneCollectingError:
         settings.logger.info("It looks like we're done collecting..")
-        return {"result": "done_collecting", "status": status.HTTP_200_OK}
+        return {"result": "done_collecting", "status_code": status.HTTP_200_OK}
 
     except RemainingRequestsError:
         settings.logger.info("No remaining API calls")
