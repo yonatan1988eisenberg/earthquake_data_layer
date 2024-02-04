@@ -10,7 +10,9 @@ COPY earthquake_data_layer ./earthquake_data_layer/
 ENV PATH="/root/.local/bin:$PATH"
 
 RUN apt-get update && \
-    apt-get install make curl -y && \
+    apt-get install -y --no-install-recommends \
+    make \
+    curl && \
     make setup && \
     rm -rf /var/lib/apt/lists/*
 

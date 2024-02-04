@@ -352,9 +352,9 @@ class Downloader:
                     )
                 api_responses.extend(cycle_api_responses)
 
-                # delay the next cycle 1 min if this isn't the last cycle
+                # delay the next cycle 1.5 min if this isn't the last cycle
                 if cycle < num_cycles - 1:
-                    time.sleep(60)
+                    time.sleep(90)
 
             settings.logger.info("Finished calls to API.")
 
