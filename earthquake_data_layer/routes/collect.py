@@ -1,4 +1,6 @@
 # pylint: disable=raise-missing-from
+import traceback
+
 from fastapi import APIRouter, HTTPException, status
 
 from collect import run_collection
@@ -47,25 +49,30 @@ def collect(run_id: str):
         )
 
     except StorageConnectionError as error:
-        settings.logger.critical(
-            f"Could not connect to the cloud:\n {error.__traceback__}"
+        error_traceback = "".join(
+            traceback.format_exception(None, error, error.__traceback__)
         )
+        settings.logger.critical(f"Could not connect to the cloud:\n {error_traceback}")
         raise HTTPException(
             status_code=definitions.HTTP_COULDNT_CONNECT_TO_STORAGE,
             detail="Could not connect to the cloud",
         )
 
     except RuntimeError as error:
-        settings.logger.critical(
-            f"Encountered a Runtime Error:\n {error.__traceback__}"
+        error_traceback = "".join(
+            traceback.format_exception(None, error, error.__traceback__)
         )
+        settings.logger.critical(f"Encountered a Runtime Error:\n {error_traceback}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Encountered a Runtime Error",
         )
 
     except Exception as error:
-        settings.logger.critical(f"Encountered an error:\n {error.__traceback__}")
+        error_traceback = "".join(
+            traceback.format_exception(None, error, error.__traceback__)
+        )
+        settings.logger.critical(f"Encountered an error:\n {error_traceback}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Encountered an error",

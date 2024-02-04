@@ -1,5 +1,6 @@
 import json
 import logging
+import traceback
 
 import pandas as pd
 
@@ -127,8 +128,11 @@ def run_collection(run_id: str):
                 Runs metadata updated: {runs_metadata_updated}\n
                 Metadata saved: {metadata_saved}"""
             )
-    except Exception as e:
+    except Exception as error:
+        error_traceback = "".join(
+            traceback.format_exception(None, error, error.__traceback__)
+        )
         settings.logger.error(
-            f"An error occurred during the data collection run: {e.__traceback__}"
+            f"An error occurred during the data collection run: {error_traceback}"
         )
         raise

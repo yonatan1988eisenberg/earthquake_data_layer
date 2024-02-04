@@ -221,6 +221,11 @@ class Downloader:
                 current_offset = offset + (
                     len(requests_params) * definitions.MAX_RESULTS_PER_REQUEST
                 )
+
+                # restrain by api: start < 100k
+                if current_offset > definitions.MAX_START:
+                    break
+
                 requests_params.append(
                     {"count": count, "start": current_offset, **base_query_kwargs}
                 )

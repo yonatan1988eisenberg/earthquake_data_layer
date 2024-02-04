@@ -8,6 +8,8 @@ MAX_RESULTS_PER_REQUEST = 1000
 MAX_REQUESTS_PER_DAY = 150
 # the advertised MAX_REQUESTS_PER_MIN is 10 but still getting error regarding the rate
 MAX_REQUESTS_PER_MIN = 8
+MAX_START = 100000
+
 
 # metadata locations
 METADATA_FILE = "metadata.json"
