@@ -8,7 +8,10 @@ MAX_RESULTS_PER_REQUEST = 1000
 MAX_REQUESTS_PER_DAY = 150
 # the advertised MAX_REQUESTS_PER_MIN is 10 but still getting error regarding the rate
 MAX_REQUESTS_PER_MIN = 8
+# restrain by API
 MAX_START = 100000
+# and therefor:
+MAX_REQUESTS_PER_CALL = 100
 
 
 # metadata locations

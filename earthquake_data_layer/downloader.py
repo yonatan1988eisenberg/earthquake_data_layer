@@ -211,10 +211,6 @@ class Downloader:
         for _, (api_key, remaining_requests) in self.keys_metadata.items():
 
             for _ in range(remaining_requests):
-                # generate header
-                headers.append(
-                    {"X-RapidAPI-Key": api_key, "X-RapidAPI-Host": settings.API_HOST}
-                )
 
                 # generate query_parameters
                 count = definitions.MAX_RESULTS_PER_REQUEST
@@ -223,25 +219,25 @@ class Downloader:
                 )
 
                 # restrain by api: start < 100k
-                if current_offset > definitions.MAX_START:
+                if current_offset >= definitions.MAX_START:
                     break
+
+                # append to headers and request params
+                headers.append(
+                    {"X-RapidAPI-Key": api_key, "X-RapidAPI-Host": settings.API_HOST}
+                )
 
                 requests_params.append(
                     {"count": count, "start": current_offset, **base_query_kwargs}
                 )
 
-                # get only NUM_REQUESTS_FOR_UPDATE request when updating
-                if (
-                    self.mode == "update"
-                    and len(requests_params) == settings.NUM_REQUESTS_FOR_UPDATE
-                ):
-                    break
-            # get only NUM_REQUESTS_FOR_UPDATE request when updating
-            if (
-                self.mode == "update"
-                and len(requests_params) == settings.NUM_REQUESTS_FOR_UPDATE
-            ):
-                break
+        # get only NUM_REQUESTS_FOR_UPDATE request and headers when updating
+        if (
+            self.mode == "update"
+            and len(requests_params) > settings.NUM_REQUESTS_FOR_UPDATE
+        ):
+            requests_params = requests_params[: settings.NUM_REQUESTS_FOR_UPDATE]
+            headers = headers[: settings.NUM_REQUESTS_FOR_UPDATE]
 
         settings.logger.info("generated the requests parameters")
         settings.logger.debug(f"expected requests: {len(requests_params)}")

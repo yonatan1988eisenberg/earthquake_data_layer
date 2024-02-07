@@ -19,10 +19,13 @@ def test_generate_requests_params_collection(blank_metadata):
     with patch.object(settings, "API_KEYs", {"key1": "api_key1", "key2": "api_key2"}):
         requests_params, headers = downloader.generate_requests_params()
 
-        assert len(requests_params) == max(
-            0, remaining_requests - settings.REQUESTS_TOLERANCE
-        )  # Assuming useable_requests remaining requests for key1
-        assert len(headers) == max(0, remaining_requests - settings.REQUESTS_TOLERANCE)
+        expected_num_requests = min(
+            max(0, remaining_requests - settings.REQUESTS_TOLERANCE),
+            definitions.MAX_REQUESTS_PER_CALL,
+        )
+
+        assert len(requests_params) == expected_num_requests
+        assert len(headers) == expected_num_requests
 
     offset = blank_metadata["collection_dates"]["offset"] or 1
     expected_request_params = [
@@ -59,10 +62,14 @@ def test_generate_requests_params_update(blank_metadata):
     )
     with patch.object(settings, "API_KEYs", {"key1": "api_key1", "key2": "api_key2"}):
         requests_params, headers = downloader.generate_requests_params()
-        assert (
-            len(requests_params) == settings.NUM_REQUESTS_FOR_UPDATE
-        )  # Assuming useable_requests remaining requests for key1
-        assert len(headers) == settings.NUM_REQUESTS_FOR_UPDATE
+
+        expected_num_requests = min(
+            max(0, remaining_requests - settings.REQUESTS_TOLERANCE),
+            settings.NUM_REQUESTS_FOR_UPDATE,
+        )
+
+        assert len(requests_params) == expected_num_requests
+        assert len(headers) == expected_num_requests
 
     offset = blank_metadata["collection_dates"]["offset"] or 1
     expected_request_params = [
