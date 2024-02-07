@@ -21,7 +21,7 @@ def get_api_keys(pattern: str = r"API_KEY\w+") -> dict[str:str]:
     return {
         key_name: api_key
         for key_name, api_key in os.environ.items()
-        if key_pattern.match(key_name)
+        if key_pattern.match(key_name) and not api_key == ""
     }
 
 
@@ -70,7 +70,7 @@ INTEGRATION_TEST = get_bool("INTEGRATION_TEST")
 """ Logging """
 LOGGER_NAME = os.getenv("LOGGER_NAME", "EDL")
 LOGLEVEL = os.getenv("LOG_LEVEL", "ERROR").upper()
-log_format = f"""{LOGGER_NAME}s :: %(levelname)-8s :: %(asctime)s %(filename)s:%(lineno)d -30s %(message)s"""
+log_format = f"""{LOGGER_NAME} :: %(levelname)-8s :: %(asctime)s %(filename)s:%(lineno)d -30s %(message)s"""
 logging.basicConfig(
     stream=sys.stdout,
     format=log_format,
