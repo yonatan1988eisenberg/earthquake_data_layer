@@ -4,7 +4,7 @@ from typing import Optional
 import requests
 from fake_headers import Headers
 
-from earthquake_data_layer import Storage, definitions, exceptions, helpers, settings
+from earthquake_data_layer import definitions, helpers, settings
 
 
 @dataclass
@@ -42,13 +42,6 @@ class Fetcher:
                 raise ValueError(
                     f"start_date and end_date should be in {definitions.DATE_FORMAT} format"
                 )
-
-        # verify the bucket exist and connection can be established
-        storage = Storage()
-        if not storage.bucket_exists(settings.AWS_BUCKET_NAME, create=True):
-            raise exceptions.StorageConnectionError(
-                "couldn't establish connection to the cloud"
-            )
 
         settings.logger.info(
             f"starting to fetch the data for the time frame {self.start_date} - {self.end_date}"
@@ -153,11 +146,9 @@ class Fetcher:
         return {"status": "successfully processed responses", "count": self.total_count}
 
     def upload_data(self):
-        connection = Storage()
         data_uploaded = helpers.add_rows_to_parquet(
             self.data,
-            connection,
-            helpers.generate_data_key_from_date(self.year, self.month),
+            key=helpers.generate_data_key_from_date(self.year, self.month),
         )
 
         if not data_uploaded:
