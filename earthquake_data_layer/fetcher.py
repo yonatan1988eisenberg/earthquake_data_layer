@@ -104,10 +104,13 @@ class Fetcher:
 
         return {"status": "successfully queried the API"}
 
-    def generate_query_params(self, query_params: Optional[dict]) -> dict:
+    def generate_query_params(self, query_params: Optional[dict] = None) -> dict:
         """
         generates the default query params and updates them with the provided query_params
         """
+
+        query_params = query_params or dict()
+
         params = {
             "start_date": self.start_date,
             "end_date": self.end_date,
