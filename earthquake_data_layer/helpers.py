@@ -56,9 +56,9 @@ def generate_data_key(run_id: str):
     return f"data/raw_data/{definitions.TODAY.strftime('%Y')}/{run_id}_data.parquet"
 
 
-def generate_data_key_from_date(year: int, month: int):
+def generate_raw_data_key_from_date(year: str, month: str):
     """generates a key for a data file based on a date"""
-    return f"data/raw_data/{year}/data_{month}.parquet"
+    return f"data/raw_data/{year}/{year}_{month}_raw_data.parquet"
 
 
 def generate_responses_metadata_key(run_id: str):
@@ -91,16 +91,16 @@ def upload_df(df: pd.DataFrame, key: str, storage: Storage) -> bool:
 
 def add_rows_to_parquet(
     rows: Union[dict, list[dict]],
-    storage: Optional[Storage] = None,
     key: str = definitions.RUNS_METADATA_KEY,
+    storage: Optional[Storage] = None,
 ) -> bool:
     """
-    Updates the runs metadata file in the storage with a new line run_metadata.
+    uploads the row(s) to the parquet file located at {key}. If the file doesn't exist creates it.
 
     Parameters:
-    - run_metadata (dict): The metadata to append.
-    - storage (Storage): The storage instance.
-    - key (str): The key for the metadata file. Default is the runs metadata key.
+    - rows (dict | list[dict]): The data to append to the file.
+    - key (str): The key for the parquet file. Default is the runs metadata key.
+    - storage (Storage): A storage instance, optional.
 
     Returns:
     bool: True if the update is successful, False otherwise.

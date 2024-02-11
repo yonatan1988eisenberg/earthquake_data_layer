@@ -150,8 +150,7 @@ class Fetcher:
 
     def upload_data(self):
         data_uploaded = helpers.add_rows_to_parquet(
-            self.data,
-            key=helpers.generate_data_key_from_date(self.year, self.month),
+            self.data, helpers.generate_raw_data_key_from_date(self.year, self.month)
         )
 
         if not data_uploaded:
@@ -162,8 +161,8 @@ class Fetcher:
 
     @property
     def year(self):
-        return int(self.start_date[:4])
+        return self.start_date[:4]
 
     @property
     def month(self):
-        return int(self.start_date[5:7])
+        return self.start_date[5:7]

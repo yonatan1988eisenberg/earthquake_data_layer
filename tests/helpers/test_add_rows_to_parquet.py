@@ -16,7 +16,7 @@ def test_file_dont_exist_single_row(sample_response, storage):
         ) as upload_func,
     ):
         result = helpers.add_rows_to_parquet(
-            rows=sample_response, storage=storage, key=definitions.ERRED_RESPONSES_KEY
+            rows=sample_response, key=definitions.ERRED_RESPONSES_KEY, storage=storage
         )
         uploaded_df = upload_func.call_args[0][0]
 
@@ -49,8 +49,8 @@ def test_file_exist(sample_response, inverted_sample_response, storage):
     ):
         result = helpers.add_rows_to_parquet(
             rows=inverted_sample_response,
-            storage=storage,
             key=definitions.ERRED_RESPONSES_KEY,
+            storage=storage,
         )
         uploaded_df = upload_func.call_args[0][0]
 
