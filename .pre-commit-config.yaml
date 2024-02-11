@@ -49,15 +49,3 @@ repos:
       language: system
       pass_filenames: false
       always_run: true
-      args: [
-        "tests/"
-      ]
-
-    - id: coverage-report
-      verbose: True
-      name: coverage-report
-      entry: coverage report --omit="tests/*"
-      language: system
-      pass_filenames: false
-      always_run: true
-      args: []
