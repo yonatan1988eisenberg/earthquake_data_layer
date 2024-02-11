@@ -5,6 +5,8 @@ from pathlib import Path
 # API
 API_URL = "https://everyearthquake.p.rapidapi.com/earthquakesByDate"
 MAX_RESULTS_PER_REQUEST = 1000
+API_URL_ = base_url = "https://earthquake.usgs.gov/fdsnws/event/1/query"
+MAX_RESULTS_PER_REQUEST_ = 20000
 MAX_REQUESTS_PER_DAY = 150
 # the advertised MAX_REQUESTS_PER_MIN is 10 but still getting error regarding the rate
 MAX_REQUESTS_PER_MIN = 8
@@ -25,7 +27,7 @@ ERRED_RESPONSES_KEY = "data/raw_data/erred_responses.parquet"
 TODAY = datetime.datetime.now()
 YESTERDAY = TODAY - datetime.timedelta(days=1)
 DATE_FORMAT = "%Y-%m-%d"
-EXPECTED_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
+EXPECTED_DATA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 # data columns seen in dev
 SEEN_COLUMNS = [
@@ -72,6 +74,8 @@ SEEN_COLUMNS = [
     "what3words",
     "timezone",
     "locationDetails",
+    # columns we're adding
+    "response_id",
 ]
 
 # API status codes

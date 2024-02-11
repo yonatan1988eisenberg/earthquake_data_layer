@@ -105,16 +105,16 @@ class Preprocess:
             row_date = row.get("date")
             # if the row has a date and it valid use it
             if row_date and is_valid_date(
-                row_date, str_format=definitions.EXPECTED_DATE_FORMAT
+                row_date, str_format=definitions.EXPECTED_DATA_DATE_FORMAT
             ):
                 # format the expected string
                 row_date = datetime.datetime.strptime(
-                    row_date, definitions.EXPECTED_DATE_FORMAT
+                    row_date, definitions.EXPECTED_DATA_DATE_FORMAT
                 ).strftime(definitions.DATE_FORMAT)
             # else: use tomorrow's date
             else:
                 row_date = (definitions.TODAY + datetime.timedelta(days=1)).strftime(
-                    definitions.EXPECTED_DATE_FORMAT
+                    definitions.EXPECTED_DATA_DATE_FORMAT
                 )
 
             row_dates.update([row_date])

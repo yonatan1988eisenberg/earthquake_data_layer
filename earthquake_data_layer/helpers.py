@@ -12,7 +12,6 @@ import pyarrow.parquet as pq
 
 from earthquake_data_layer import definitions, settings
 from earthquake_data_layer.metadata_manager import MetadataManager
-from earthquake_data_layer.settings import logger
 from earthquake_data_layer.storage import Storage
 
 
@@ -55,6 +54,11 @@ def is_valid_date(
 def generate_data_key(run_id: str):
     """generates a key for a run's data file"""
     return f"data/raw_data/{definitions.TODAY.strftime('%Y')}/{run_id}_data.parquet"
+
+
+def generate_data_key_from_date(year: int, month: int):
+    """generates a key for a data file based on a date"""
+    return f"data/raw_data/{year}/data_{month}.parquet"
 
 
 def generate_responses_metadata_key(run_id: str):
@@ -114,7 +118,7 @@ def add_rows_to_parquet(
         df = pd.concat([df, pd.DataFrame.from_records(rows)], ignore_index=True)
     # if the file doesn't exist (first run)
     except FileNotFoundError:
-        logger.error("Couldn't find runs.parquet")
+        settings.logger.error(f"Couldn't find {key}")
         df = pd.DataFrame.from_records(rows)
 
     # upload to storage
