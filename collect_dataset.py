@@ -49,15 +49,11 @@ def fetch_months_data(months: Iterable, metadata: dict) -> dict:
         if result.get("status") == definitions.STATUS_UPLOAD_DATA_SUCCESS:
             log_msg = LOG_MESSAGE_SUCCESS.format(year, month)
             settings.logger.info(log_msg)
-            metadata["details"][year][
-                month
-            ] = definitions.STATUS_COLLECTION_METADATA_COMPLETE
+            metadata["details"][year][month] = definitions.STATUS_PIPELINE_SUCCESS
         else:
             log_msg = LOG_MESSAGE_ERROR.format(year, month)
             settings.logger.info(log_msg)
-            metadata["details"][year][
-                month
-            ] = definitions.STATUS_COLLECTION_METADATA_INCOMPLETE
+            metadata["details"][year][month] = definitions.STATUS_PIPELINE_FAIL
             error_flag = True
 
         if i != 0 and i % settings.COLLECTION_BATCH_SIZE == 0:

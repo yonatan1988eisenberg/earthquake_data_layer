@@ -76,6 +76,7 @@ class Storage:
         )
         self.endpoint_url = kwargs.get("endpoint_url", AWS_S3_ENDPOINT)
         self.region_name = kwargs.get("region_name", AWS_REGION)
+        self.bucket_name = kwargs.get("bucket_name", AWS_BUCKET_NAME)
 
         client = kwargs.get("client")
         if not client:
@@ -92,7 +93,7 @@ class Storage:
 
     def bucket_exists(
         self,
-        bucket_name: str,
+        bucket_name: Optional[str] = None,
         client: Optional[boto3.client] = None,
         create: bool = False,
     ) -> bool:
@@ -107,9 +108,8 @@ class Storage:
         Returns:
         - bool: True if the bucket exists, False otherwise.
         """
-
-        if not client:
-            client = self.client
+        bucket_name = bucket_name or self.bucket_name
+        client = client or self.client
 
         try:
             client.head_bucket(Bucket=bucket_name)
@@ -130,7 +130,7 @@ class Storage:
             return False
 
     def list_objects(
-        self, bucket_name: str = AWS_BUCKET_NAME, prefix: Optional[str] = ""
+        self, bucket_name: Optional[str] = None, prefix: Optional[str] = ""
     ) -> list[str]:
         """
         List all objects in an S3 bucket.
@@ -145,13 +145,14 @@ class Storage:
 
         settings.logger.debug(f"listing objects with prefix {prefix}")
 
+        bucket_name = bucket_name or self.bucket_name
         response = self.client.list_objects(Bucket=bucket_name, Prefix=prefix)
         return [obj["Key"] for obj in response.get("Contents", [])]
 
     def remove_object(
         self,
         key: str,
-        bucket_name: str = AWS_BUCKET_NAME,
+        bucket_name: Optional[str] = None,
         client: Optional[boto3.client] = None,
     ) -> bool:
         """
@@ -165,8 +166,8 @@ class Storage:
         Returns:
         - bool: True if the object is removed successfully, False otherwise.
         """
-        if not client:
-            client = self.client
+        bucket_name = bucket_name or self.bucket_name
+        client = client or self.client
 
         try:
             if key in self.list_objects(bucket_name, key):
@@ -185,7 +186,7 @@ class Storage:
         self,
         file_source: Union[str, bytes],
         key: Optional[str] = None,
-        bucket_name: str = AWS_BUCKET_NAME,
+        bucket_name: Optional[str] = None,
         client: Optional[boto3.client] = None,
     ) -> bool:
         """
@@ -200,8 +201,9 @@ class Storage:
         Returns:
         - bool: True if the object is saved successfully, False otherwise.
         """
-        if not client:
-            client = self.client
+
+        bucket_name = bucket_name or self.bucket_name
+        client = client or self.client
 
         try:
             if isinstance(file_source, str):
@@ -226,7 +228,7 @@ class Storage:
         key: str,
         return_as_io: bool = True,
         destination_path: Optional[str] = None,
-        bucket_name: str = AWS_BUCKET_NAME,
+        bucket_name: Optional[str] = None,
         client: Optional[boto3.client] = None,
     ) -> Optional[Union[bool, io.BytesIO]]:
         """
@@ -244,8 +246,8 @@ class Storage:
         - Union[io.BytesIO, bool, None]: If return_as_io is True, returns io.BytesIO object. If return_as_io is False,
           returns True if the object is saved successfully, otherwise None.
         """
-        if not client:
-            client = self.client
+        bucket_name = bucket_name or self.bucket_name
+        client = client or self.client
 
         if len(self.list_objects(bucket_name, key)) == 0:
             raise FileNotFoundError(f"no object found under the key {key}")

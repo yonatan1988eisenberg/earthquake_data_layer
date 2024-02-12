@@ -38,7 +38,9 @@ def blank_metadata():
 
 @pytest.fixture(scope="module")
 def test_bucket():
-    return "test-bucket"
+    bucket_name = "test-bucket"
+    os.environ["AWS_BUCKET_NAME"] = bucket_name
+    return bucket_name
 
 
 @pytest.fixture(scope="module")
@@ -58,8 +60,8 @@ def storage(aws_credentials, test_bucket):
         from earthquake_data_layer import Storage
 
         s3_client = boto3.client("s3")
-        storage = Storage(client=s3_client)
-        assert storage.bucket_exists(test_bucket, create=True)
+        storage = Storage(client=s3_client, bucket_name=test_bucket)
+        assert storage.bucket_exists(create=True)
         yield storage
 
 
