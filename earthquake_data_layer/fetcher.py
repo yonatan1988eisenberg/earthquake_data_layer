@@ -102,7 +102,7 @@ class Fetcher:
                 settings.logger.critical(
                     f"encountered an error while querying the API: {error_traceback}"
                 )
-                return {"status": definitions.STATUS_QUERY_API_FAILED, "error": error}
+                return {"status": definitions.STATUS_QUERY_API_FAIL, "error": error}
 
         settings.logger.info(
             f"finished querying the API, num responses: {len(self.responses)}"
@@ -161,7 +161,7 @@ class Fetcher:
 
         if not data_uploaded:
             settings.logger.critical("encountered an error while uploading the data")
-            return {"status": definitions.STATUS_UPLOAD_DATA_FAILED, "error": True}
+            return {"status": definitions.STATUS_UPLOAD_DATA_FAIL, "error": True}
 
         return {"status": definitions.STATUS_UPLOAD_DATA_SUCCESS}
 

@@ -39,6 +39,6 @@ def test_failed(expected_key, expected_data, mock_fetcher):
         result = mock_fetcher.upload_data()
 
         assert result.get("error") is True
-        assert result.get("status") == definitions.STATUS_UPLOAD_DATA_FAILED
+        assert result.get("status") == definitions.STATUS_UPLOAD_DATA_FAIL
 
         mock_upload.assert_called_once_with(expected_data, expected_key)

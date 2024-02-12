@@ -22,6 +22,7 @@ METADATA_LOCATION = Path(__file__).parent.joinpath(METADATA_FILE)
 METADATA_KEY = "metadata.json"
 RUNS_METADATA_KEY = "data/runs/runs.parquet"
 ERRED_RESPONSES_KEY = "data/raw_data/erred_responses.parquet"
+COLLECTION_METADATA_KEY = "data/collection_metadata.json"
 
 # fixed time and date format
 TODAY = datetime.datetime.now()
@@ -85,8 +86,14 @@ HTTP_COULDNT_CONNECT_TO_STORAGE = 462
 
 # pipeline statuses
 STATUS_QUERY_API_SUCCESS = "successfully queried the API"
-STATUS_QUERY_API_FAILED = "error during API call"
+STATUS_QUERY_API_FAIL = "error during API call"
 STATUS_PROCESS_SUCCESS = "successfully processed responses"
-STATUS_PROCESS_FAILED = ""
+STATUS_PROCESS_FAIL = ""
 STATUS_UPLOAD_DATA_SUCCESS = "successfully uploaded the data"
-STATUS_UPLOAD_DATA_FAILED = "error while uploading the data"
+STATUS_UPLOAD_DATA_FAIL = "error while uploading the data"
+STATUS_PIPELINE_SUCCESS = "successfully fetched the data for this time frame"
+STATUS_PIPELINE_FAIL = "failed fetching the data for this time frame"
+
+# collection_metadata statuses
+STATUS_COLLECTION_METADATA_COMPLETE = "complete"
+STATUS_COLLECTION_METADATA_INCOMPLETE = "incomplete"

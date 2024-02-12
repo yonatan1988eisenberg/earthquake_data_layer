@@ -40,7 +40,7 @@ def test_success(
 def test_error_api(mock_fetcher, expected_metadata):
     expected_error = requests.RequestException()
     expected_metadata.update(
-        {"status": definitions.STATUS_QUERY_API_FAILED, "error": expected_error}
+        {"status": definitions.STATUS_QUERY_API_FAIL, "error": expected_error}
     )
     expected_metadata.pop("count")
 
