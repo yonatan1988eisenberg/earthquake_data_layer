@@ -38,6 +38,8 @@ EARLIEST_EARTHQUAKE_DATE = "1900-01-01"
 DATA_TYPE_TO_FETCH = "earthquake"
 # how many requests to leave in each key when collecting
 REQUESTS_TOLERANCE = int(os.getenv("REQUESTS_TOLERANCE", "0"))
+# save the runs data every n months completed
+COLLECTION_BATCH_SIZE = 50
 
 """ Metadata Location """
 LOCAL_METADATA = False

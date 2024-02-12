@@ -107,6 +107,7 @@ def add_rows_to_parquet(
     rows: Union[dict, list[dict]],
     key: str = definitions.RUNS_METADATA_KEY,
     storage: Optional[Storage] = None,
+    remove_duplicates=True,
 ) -> bool:
     """
     uploads the row(s) to the parquet file located at {key}. If the file doesn't exist creates it.
@@ -130,6 +131,9 @@ def add_rows_to_parquet(
     try:
         df = pd.read_parquet(storage.load_object(key))
         df = pd.concat([df, pd.DataFrame.from_records(rows)], ignore_index=True)
+        if remove_duplicates:
+            df = df.drop_duplicates()
+
     # if the file doesn't exist (first run)
     except FileNotFoundError:
         settings.logger.error(f"Couldn't find {key}")
@@ -243,3 +247,71 @@ def updated_and_save_metadata(
         collection_start_date=new_collection_start_date,
         save=save,
     )
+
+
+class DatasetMonths:
+    """
+    Iterates over months within a given date range.
+    """
+
+    def __init__(self, **kwargs):
+        """
+        Initialize DatasetMonths with optional parameters.
+
+        Args:
+            first_date (Union[datetime.datetime, str]): Start date of the iteration.
+            last_date (Union[datetime.datetime, str]): End date of the iteration.
+            date_format (str): Format of date strings (default: definitions.DATE_FORMAT).
+        """
+        self.first_date: Union[datetime.datetime, str] = (
+            kwargs.get("first_date") or settings.EARLIEST_EARTHQUAKE_DATE
+        )
+        self.last_date: Union[datetime.datetime, str] = (
+            kwargs.get("last_date") or definitions.YESTERDAY
+        )
+        self.date_format: str = kwargs.get("date_format") or definitions.DATE_FORMAT
+
+        self.verify_input()
+
+        settings.logger.info(
+            f"initiated DatasetMonths with time frame {self.first_date.strftime(definitions.DATE_FORMAT)} - {self.last_date.strftime(definitions.DATE_FORMAT)}"
+        )
+
+    def verify_input(self):
+        """
+        Verify and convert input dates to datetime objects if they are strings.
+        Raises:
+            ValueError: If the date is not a valid date string.
+        """
+        try:
+            if isinstance(self.first_date, str):
+                self.first_date = datetime.datetime.strptime(
+                    self.first_date, self.date_format
+                )
+            if isinstance(self.last_date, str):
+                self.last_date = datetime.datetime.strptime(
+                    self.last_date, self.date_format
+                )
+        except ValueError as e:
+            raise ValueError(f"Invalid input: {e}") from e
+
+    def __iter__(self):
+        """
+        Initialize iterator for DatasetMonths.
+        """
+        self.current_month = self.first_date - relativedelta(months=1)
+        return self
+
+    def __next__(self):
+        """
+        Get the next year and month in the iteration.
+
+        Returns:
+            Tuple[int, int]: Year and month.
+        """
+        self.current_month += relativedelta(months=1)
+
+        if self.current_month > self.last_date:
+            raise StopIteration
+
+        return self.current_month.year, self.current_month.month

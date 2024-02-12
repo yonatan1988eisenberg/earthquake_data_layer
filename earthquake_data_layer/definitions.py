@@ -23,6 +23,8 @@ METADATA_KEY = "metadata.json"
 RUNS_METADATA_KEY = "data/runs/runs.parquet"
 ERRED_RESPONSES_KEY = "data/raw_data/erred_responses.parquet"
 COLLECTION_METADATA_KEY = "data/collection_metadata.json"
+COLLECTION_RUNS_KEY = "data/collection.parquet"
+UPDATE_RUNS_KEY = "data/update.parquet"
 
 # fixed time and date format
 TODAY = datetime.datetime.now()

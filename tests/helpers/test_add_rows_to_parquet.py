@@ -8,6 +8,7 @@ import pyarrow.parquet as pq
 from earthquake_data_layer import definitions, helpers
 
 
+# todo: rewrite tests with current data scheme, add test to make sure duplicates are removed
 def test_file_dont_exist_single_row(sample_response, storage):
     with (
         patch("earthquake_data_layer.Storage.list_objects"),
@@ -51,6 +52,7 @@ def test_file_exist(sample_response, inverted_sample_response, storage):
             rows=inverted_sample_response,
             key=definitions.ERRED_RESPONSES_KEY,
             storage=storage,
+            remove_duplicates=False,
         )
         uploaded_df = upload_func.call_args[0][0]
 
