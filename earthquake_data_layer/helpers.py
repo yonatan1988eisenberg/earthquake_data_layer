@@ -9,6 +9,7 @@ from typing import Optional, Union
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+from dateutil.relativedelta import relativedelta
 
 from earthquake_data_layer import definitions, settings
 from earthquake_data_layer.metadata_manager import MetadataManager
@@ -59,6 +60,19 @@ def generate_data_key(run_id: str):
 def generate_raw_data_key_from_date(year: str, month: str):
     """generates a key for a data file based on a date"""
     return f"data/raw_data/{year}/{year}_{month}_raw_data.parquet"
+
+
+def get_month_start_end_dates(year: int, month: int) -> tuple[str, str]:
+    """
+    takes a year and a month and returns two strings of the first and last day of
+    that month in {definitions.DATE_FORMAT} format.
+    """
+    start_date = datetime.date(year, month, 1)
+    end_date = start_date + relativedelta(day=31)
+
+    return start_date.strftime(definitions.DATE_FORMAT), end_date.strftime(
+        definitions.DATE_FORMAT
+    )
 
 
 def generate_responses_metadata_key(run_id: str):
