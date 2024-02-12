@@ -19,18 +19,18 @@ def read_root():
 
 
 def collect_initial_dataset():
+    """verifies the collection dataset was successfully and completely downloaded, retries every 6 hour"""
     settings.logger.info("Verifying initial dataset was collected")
     result = False
     while not result:
         result = collect_dataset.verify_initial_dataset()
         if not result:
-            # try every 15 hours
-            sleep(54000)
+            # retry every 6 hours
+            sleep(21600)
 
 
 def start():
-    thread = Thread(target=collect_initial_dataset)
-    thread.start()
+    Thread(target=collect_initial_dataset).start()
 
     settings.logger.info("Starting app")
     run(app, host=settings.DATA_LAYER_ENDPOINT, port=int(settings.DATA_LAYER_PORT))
