@@ -1,22 +1,7 @@
-# pylint: disable=redefined-outer-name
 from unittest.mock import patch
 
-import pytest
-
+from earthquake_data_layer import definitions
 from earthquake_data_layer.helpers import generate_raw_data_key_from_date
-
-
-@pytest.fixture
-def expected_key():
-    return "data/raw_data/2021/2021_03_raw_data.parquet"
-
-
-@pytest.fixture
-def expected_data(mock_response_data):
-    return [
-        {"id": 2, **mock_response_data},
-        {"id": 1, **{val: key for key, val in mock_response_data.items()}},
-    ]
 
 
 def test_success(expected_key, expected_data, mock_fetcher):
@@ -33,7 +18,7 @@ def test_success(expected_key, expected_data, mock_fetcher):
         result = mock_fetcher.upload_data()
 
         assert not result.get("error")
-        assert result.get("status")
+        assert result.get("status") == definitions.STATUS_UPLOAD_DATA_SUCCESS
 
         mock_upload.assert_called_once_with(expected_data, expected_key)
 
@@ -53,7 +38,7 @@ def test_failed(expected_key, expected_data, mock_fetcher):
     ) as mock_upload:
         result = mock_fetcher.upload_data()
 
-        assert result.get("error")
-        assert not result.get("status")
+        assert result.get("error") is True
+        assert result.get("status") == definitions.STATUS_UPLOAD_DATA_FAILED
 
         mock_upload.assert_called_once_with(expected_data, expected_key)

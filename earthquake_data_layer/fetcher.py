@@ -1,4 +1,6 @@
+import traceback
 from dataclasses import dataclass
+from functools import partial
 from typing import Optional
 
 import requests
@@ -49,16 +51,17 @@ class Fetcher:
 
         self.metadata = {
             "start_date": self.start_date,
-            "end_data": self.end_date,
+            "end_date": self.end_date,
             "execution_date": definitions.TODAY,
         }
 
         # run the pipeline, return the metadata upon error
-        for step_result in (
-            self.query_api(kwargs.get("query_params", {})),
-            self.process(),
-            self.upload_data(),
+        for step in (
+            partial(self.query_api, kwargs.get("query_params", {})),
+            partial(self.process),
+            partial(self.upload_data),
         ):
+            step_result = step()
             self.metadata.update(step_result)
             if self.metadata.get("error"):
                 break
@@ -93,16 +96,19 @@ class Fetcher:
                 query_params["offset"] += definitions.MAX_RESULTS_PER_REQUEST_
 
             except (requests.RequestException, IndexError) as error:
-                settings.logger.critical(
-                    f"encountered an error while querying the API: {error}"
+                error_traceback = "".join(
+                    traceback.format_exception(None, error, error.__traceback__)
                 )
-                return {"error": error}
+                settings.logger.critical(
+                    f"encountered an error while querying the API: {error_traceback}"
+                )
+                return {"status": definitions.STATUS_QUERY_API_FAILED, "error": error}
 
         settings.logger.info(
             f"finished querying the API, num responses: {len(self.responses)}"
         )
 
-        return {"status": "successfully queried the API"}
+        return {"status": definitions.STATUS_QUERY_API_SUCCESS}
 
     def generate_query_params(self, query_params: Optional[dict] = None) -> dict:
         """
@@ -146,7 +152,7 @@ class Fetcher:
 
         settings.logger.info("finished processing the responses")
 
-        return {"status": "successfully processed responses", "count": self.total_count}
+        return {"status": definitions.STATUS_PROCESS_SUCCESS, "count": self.total_count}
 
     def upload_data(self):
         data_uploaded = helpers.add_rows_to_parquet(
@@ -155,9 +161,9 @@ class Fetcher:
 
         if not data_uploaded:
             settings.logger.critical("encountered an error while uploading the data")
-            return {"error": "encountered an error while uploading the data"}
+            return {"status": definitions.STATUS_UPLOAD_DATA_FAILED, "error": True}
 
-        return {"status": "uploaded the data"}
+        return {"status": definitions.STATUS_UPLOAD_DATA_SUCCESS}
 
     @property
     def year(self):

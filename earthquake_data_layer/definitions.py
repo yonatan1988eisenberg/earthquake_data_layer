@@ -82,3 +82,11 @@ SEEN_COLUMNS = [
 HTTP_NO_REMAINING_API_CALLS = 460
 HTTP_COULDNT_FETCH_HEALTHY_RESPONSES = 461
 HTTP_COULDNT_CONNECT_TO_STORAGE = 462
+
+# pipeline statuses
+STATUS_QUERY_API_SUCCESS = "successfully queried the API"
+STATUS_QUERY_API_FAILED = "error during API call"
+STATUS_PROCESS_SUCCESS = "successfully processed responses"
+STATUS_PROCESS_FAILED = ""
+STATUS_UPLOAD_DATA_SUCCESS = "successfully uploaded the data"
+STATUS_UPLOAD_DATA_FAILED = "error while uploading the data"

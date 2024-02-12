@@ -52,3 +52,24 @@ def first_response_content(data_point_1):
         "metadata": {"status": 200, "count": MAX_RESULTS_PER_REQUEST_},
         "features": [data_point_1],
     }
+
+
+@pytest.fixture
+def expected_key():
+    return "data/raw_data/2021/2021_03_raw_data.parquet"
+
+
+@pytest.fixture
+def expected_data(mock_response_data):
+    return [
+        {"id": 2, **mock_response_data},
+        {"id": 1, **{val: key for key, val in mock_response_data.items()}},
+    ]
+
+
+@pytest.fixture
+def expected_count(first_response_content, last_response_content):
+    return (
+        first_response_content["metadata"]["count"]
+        + last_response_content["metadata"]["count"]
+    )
