@@ -22,7 +22,8 @@ def test_no_metadata_file_complete(storage, successful_run):
     with patch("collect_dataset.Storage", return_value=storage):
         with patch.object(storage, "list_objects", return_value=[]):
             with patch(
-                "collect_dataset.fetch_months_data", return_value=successful_run
+                "earthquake_data_layer.helpers.fetch_months_data",
+                return_value=successful_run,
             ):
                 result = verify_initial_dataset()
 
@@ -33,7 +34,8 @@ def test_no_metadata_file_incomplete(storage, unsuccessful_run):
     with patch("collect_dataset.Storage", return_value=storage):
         with patch.object(storage, "list_objects", return_value=[]):
             with patch(
-                "collect_dataset.fetch_months_data", return_value=unsuccessful_run
+                "earthquake_data_layer.helpers.fetch_months_data",
+                return_value=unsuccessful_run,
             ):
                 result = verify_initial_dataset()
 
@@ -58,7 +60,10 @@ def test_incomplete(storage, unsuccessful_run):
         Body=bytes(json.dumps(unsuccessful_run, indent=2).encode("utf-8")),
     )
     with patch("collect_dataset.Storage", return_value=storage):
-        with patch("collect_dataset.fetch_months_data", return_value=unsuccessful_run):
+        with patch(
+            "earthquake_data_layer.helpers.fetch_months_data",
+            return_value=unsuccessful_run,
+        ):
             result = verify_initial_dataset()
 
             assert not result

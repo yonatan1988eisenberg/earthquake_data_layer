@@ -3,8 +3,8 @@ from unittest.mock import patch
 
 import pytest
 
-from collect_dataset import fetch_months_data
 from earthquake_data_layer import definitions, settings
+from earthquake_data_layer.helpers import fetch_months_data
 
 
 @pytest.fixture
@@ -32,13 +32,13 @@ def test_success(storage, mock_metadata, fetch_data_return_value):
     expected_rows = [fetch_data_return_value] * len(dates)
     with patch("collect_dataset.Storage", return_value=storage):
         with patch(
-            "collect_dataset.helpers.add_rows_to_parquet", return_value=True
+            "earthquake_data_layer.helpers.add_rows_to_parquet", return_value=True
         ) as mock_save_rows:
             with patch(
-                "earthquake_data_layer.fetcher.Fetcher.fetch_data",
+                "earthquake_data_layer.helpers.Fetcher.fetch_data",
                 return_value=fetch_data_return_value,
             ):
-                result_metadata = fetch_months_data(dates, mock_metadata)
+                result_metadata = fetch_months_data(dates, mock_metadata, storage)
                 assert (
                     result_metadata.get("status")
                     == definitions.STATUS_COLLECTION_METADATA_COMPLETE
@@ -76,7 +76,7 @@ def test_success_multiple_batches(storage, mock_metadata, fetch_data_return_valu
                 "earthquake_data_layer.fetcher.Fetcher.fetch_data",
                 return_value=fetch_data_return_value,
             ):
-                result_metadata = fetch_months_data(dates, mock_metadata)
+                result_metadata = fetch_months_data(dates, mock_metadata, storage)
                 assert (
                     result_metadata.get("status")
                     == definitions.STATUS_COLLECTION_METADATA_COMPLETE
@@ -111,7 +111,7 @@ def test_fail(storage, mock_metadata):
                 "earthquake_data_layer.fetcher.Fetcher.fetch_data",
                 return_value={"status": definitions.STATUS_UPLOAD_DATA_FAIL},
             ):
-                result_metadata = fetch_months_data(dates, mock_metadata)
+                result_metadata = fetch_months_data(dates, mock_metadata, storage)
                 assert (
                     result_metadata.get("status")
                     == definitions.STATUS_COLLECTION_METADATA_INCOMPLETE

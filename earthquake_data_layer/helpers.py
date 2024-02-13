@@ -1,7 +1,9 @@
 import datetime
+import json
 import logging
 import random
 import string
+from collections.abc import Iterable
 from copy import deepcopy
 from random import choice
 from typing import Optional, Union
@@ -12,8 +14,14 @@ import pyarrow.parquet as pq
 from dateutil.relativedelta import relativedelta
 
 from earthquake_data_layer import definitions, settings
+from earthquake_data_layer.fetcher import Fetcher
 from earthquake_data_layer.metadata_manager import MetadataManager
 from earthquake_data_layer.storage import Storage
+
+LOG_MESSAGE_DATASET_MONTHS = "initiated DatasetMonths with time frame {} - {}"
+LOG_MESSAGE_DOWNLOAD_DATA = "starting to download data for dates:"
+LOG_MESSAGE_SUCCESS = "{}-{}: success"
+LOG_MESSAGE_ERROR = "{}-{}: error"
 
 
 def is_valid_date(
@@ -315,3 +323,65 @@ class DatasetMonths:
             raise StopIteration
 
         return self.current_month.year, self.current_month.month
+
+
+def fetch_months_data(
+    months: Iterable, metadata: dict, storage: Optional[Storage] = None
+) -> dict:
+    """
+    Fetch earthquake data for a given list of months.
+
+    Args:
+        months (Iterable): Iterable of tuples representing year and month.
+        metadata (dict): Metadata dictionary.
+        storage (Storage): a Storage object, optional.
+
+    Returns:
+        dict: Updated metadata.
+    """
+
+    # verify details key exists and is a dict
+    metadata.setdefault("details", {})
+
+    if not storage:
+        storage = Storage()
+
+    settings.logger.info(LOG_MESSAGE_DOWNLOAD_DATA)
+
+    error_flag = False
+    new_rows = list()
+
+    for i, (year, month) in enumerate(months):
+        metadata["details"].setdefault(year, {})
+
+        start_date, end_date = get_month_start_end_dates(year, month)
+        fetcher = Fetcher(start_date=start_date, end_date=end_date)
+        result = fetcher.fetch_data()
+
+        new_rows.append(result)
+
+        if result.get("status") == definitions.STATUS_UPLOAD_DATA_SUCCESS:
+            log_msg = LOG_MESSAGE_SUCCESS.format(year, month)
+            settings.logger.info(log_msg)
+            metadata["details"][year][month] = definitions.STATUS_PIPELINE_SUCCESS
+        else:
+            log_msg = LOG_MESSAGE_ERROR.format(year, month)
+            settings.logger.info(log_msg)
+            metadata["details"][year][month] = definitions.STATUS_PIPELINE_FAIL
+            error_flag = True
+
+        if i != 0 and i % settings.COLLECTION_BATCH_SIZE == 0:
+            add_rows_to_parquet(
+                new_rows, definitions.COLLECTION_RUNS_KEY, storage=storage
+            )
+            storage.save_object(
+                json.dumps(metadata).encode("utf-8"),
+                definitions.COLLECTION_METADATA_KEY,
+            )
+
+    add_rows_to_parquet(new_rows, definitions.COLLECTION_RUNS_KEY, storage=storage)
+
+    if not error_flag:
+        metadata["status"] = definitions.STATUS_COLLECTION_METADATA_COMPLETE
+
+    return metadata
