@@ -21,15 +21,15 @@ def read_root():
 def collect_initial_dataset():
     """verifies the collection dataset was successfully and completely downloaded, retries every 6 hour"""
     settings.logger.info("Verifying initial dataset was collected")
-    result = False
-    while not result:
+    verified = False
+    while not verified:
 
         if settings.INTEGRATION_TEST:
-            result = True
+            verified = True
             continue
 
-        result = collect_dataset.verify_initial_dataset()
-        if not result:
+        verified = collect_dataset.verify_initial_dataset()
+        if not verified:
             # retry every 6 hours
             sleep(21600)
 
