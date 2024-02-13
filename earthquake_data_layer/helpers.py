@@ -326,24 +326,33 @@ class DatasetMonths:
 
 
 def fetch_months_data(
-    months: Iterable, metadata: dict, storage: Optional[Storage] = None
+    months: Iterable,
+    metadata: Optional[dict] = None,
+    storage: Optional[Storage] = None,
+    runs_key: str = definitions.COLLECTION_RUNS_KEY,
+    metadata_key: str = definitions.COLLECTION_METADATA_KEY,
 ) -> dict:
     """
-    Fetch earthquake data for a given list of months.
+    Fetch earthquake data for a given list of months, saves the return value from fetcher.fetch_data() at {runs_key}
+    and returns the updated metadata.
 
     Args:
         months (Iterable): Iterable of tuples representing year and month.
         metadata (dict): Metadata dictionary.
         storage (Storage): a Storage object, optional.
+        runs_key (str): where tho save the result of each run, default to definitions.COLLECTION_RUNS_KEY.
+        metadata_key (str): where tho save the metadata, default to definitions.COLLECTION_METADATA_KEY.
 
     Returns:
         dict: Updated metadata.
     """
+    if not metadata:
+        metadata = dict()
 
     # verify details key exists and is a dict
     metadata.setdefault("details", {})
 
-    if not storage:
+    if not storage and any((runs_key, metadata_key)):
         storage = Storage()
 
     settings.logger.info(LOG_MESSAGE_DOWNLOAD_DATA)
@@ -371,15 +380,16 @@ def fetch_months_data(
             error_flag = True
 
         if i != 0 and i % settings.COLLECTION_BATCH_SIZE == 0:
-            add_rows_to_parquet(
-                new_rows, definitions.COLLECTION_RUNS_KEY, storage=storage
-            )
-            storage.save_object(
-                json.dumps(metadata).encode("utf-8"),
-                definitions.COLLECTION_METADATA_KEY,
-            )
+            if runs_key:
+                add_rows_to_parquet(new_rows, runs_key, storage=storage)
+            if metadata_key:
+                storage.save_object(
+                    json.dumps(metadata).encode("utf-8"),
+                    metadata_key,
+                )
 
-    add_rows_to_parquet(new_rows, definitions.COLLECTION_RUNS_KEY, storage=storage)
+    if runs_key:
+        add_rows_to_parquet(new_rows, runs_key, storage=storage)
 
     if not error_flag:
         metadata["status"] = definitions.STATUS_COLLECTION_METADATA_COMPLETE
