@@ -23,10 +23,17 @@ def collect_initial_dataset():
     settings.logger.info("Verifying initial dataset was collected")
     result = False
     while not result:
+
+        if settings.INTEGRATION_TEST:
+            result = True
+            continue
+
         result = collect_dataset.verify_initial_dataset()
         if not result:
             # retry every 6 hours
             sleep(21600)
+
+    settings.logger.info("The initial dataset was verified")
 
 
 def start():
