@@ -4,7 +4,7 @@ FROM python:3.10-slim
 
 # WORKDIR /app
 
-COPY collect.py pyproject.toml poetry.lock Makefile README.md ./
+COPY collect.py collect_dataset.py update_dataset.py pyproject.toml poetry.lock Makefile README.md ./
 COPY earthquake_data_layer ./earthquake_data_layer/
 
 ENV PATH="/root/.local/bin:$PATH"
