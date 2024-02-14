@@ -1,11 +1,9 @@
 import datetime
 import json
-import logging
 import random
 import string
 import traceback
 from collections.abc import Iterable
-from random import choice
 from typing import Optional, Union
 
 import pandas as pd
@@ -58,11 +56,6 @@ def is_valid_date(
     return False
 
 
-def generate_data_key(run_id: str):
-    """generates a key for a run's data file"""
-    return f"data/raw_data/{definitions.TODAY.strftime('%Y')}/{run_id}_data.parquet"
-
-
 def generate_raw_data_key_from_date(year: str, month: str):
     """generates a key for a data file based on a date"""
     return f"data/raw_data/{year}/{year}_{month}_raw_data.parquet"
@@ -79,11 +72,6 @@ def get_month_start_end_dates(year: int, month: int) -> tuple[str, str]:
     return start_date.strftime(definitions.DATE_FORMAT), end_date.strftime(
         definitions.DATE_FORMAT
     )
-
-
-def generate_responses_metadata_key(run_id: str):
-    """generates a key for a run's responses' metadata file"""
-    return f"data/runs/{definitions.TODAY.strftime('%Y')}/{run_id}.parquet"
 
 
 def random_string(n: int = 5):
@@ -147,32 +135,6 @@ def add_rows_to_parquet(
 
     # upload to storage
     return upload_df(df, key, storage)
-
-
-def key_api2name(key: str) -> Union[str, bool]:
-    """
-    Convert API key to key name.
-
-    Parameters:
-    - key (str): The API key.
-
-    Returns:
-    str: The corresponding key name.
-    """
-    candidates = [
-        key_name for key_name, api_key in settings.API_KEYs.items() if api_key == key
-    ]
-    match len(candidates):
-        case 1:
-            return next(iter(candidates))
-        case 0:
-            return False
-        case _:
-            rand_candidate = choice(candidates)
-            logging.info(
-                f"more than one API name matches the key, returning a random choice - {rand_candidate}"
-            )
-            return rand_candidate
 
 
 class DatasetMonths:
