@@ -99,7 +99,7 @@ def upload_df(df: pd.DataFrame, key: str, storage: Storage) -> bool:
 
 def add_rows_to_parquet(
     rows: Union[dict, list[dict]],
-    key: str = definitions.RUNS_METADATA_KEY,
+    key: str,
     storage: Optional[Storage] = None,
     remove_duplicates=True,
 ) -> bool:

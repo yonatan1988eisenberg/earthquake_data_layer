@@ -2,7 +2,7 @@
 import pytest
 
 from earthquake_data_layer import Fetcher
-from earthquake_data_layer.definitions import MAX_RESULTS_PER_REQUEST_
+from earthquake_data_layer.definitions import MAX_RESULTS_PER_REQUEST
 
 
 @pytest.fixture()
@@ -41,7 +41,7 @@ def data_point_2(mock_response_data):
 @pytest.fixture
 def last_response_content(data_point_2):
     return {
-        "metadata": {"status": 200, "count": MAX_RESULTS_PER_REQUEST_ // 2},
+        "metadata": {"status": 200, "count": MAX_RESULTS_PER_REQUEST // 2},
         "features": [data_point_2],
     }
 
@@ -49,7 +49,7 @@ def last_response_content(data_point_2):
 @pytest.fixture
 def first_response_content(data_point_1):
     return {
-        "metadata": {"status": 200, "count": MAX_RESULTS_PER_REQUEST_},
+        "metadata": {"status": 200, "count": MAX_RESULTS_PER_REQUEST},
         "features": [data_point_1],
     }
 

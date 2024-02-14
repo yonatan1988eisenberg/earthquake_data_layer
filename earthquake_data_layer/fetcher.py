@@ -6,7 +6,7 @@ from typing import Optional
 import requests
 from fake_headers import Headers
 
-from earthquake_data_layer import definitions, exceptions, settings
+from earthquake_data_layer import definitions, settings
 from earthquake_data_layer.helpers import (
     add_rows_to_parquet,
     generate_raw_data_key_from_date,
@@ -86,7 +86,7 @@ class Fetcher:
         while True:
             try:
                 response = requests.get(
-                    definitions.API_URL_,
+                    definitions.API_URL,
                     headers=self.header.generate(),
                     params=query_params,
                     timeout=5,
@@ -95,10 +95,10 @@ class Fetcher:
                 self.responses.append(response)
 
                 # check if we need more requests
-                if response["metadata"]["count"] < definitions.MAX_RESULTS_PER_REQUEST_:
+                if response["metadata"]["count"] < definitions.MAX_RESULTS_PER_REQUEST:
                     break
 
-                query_params["offset"] += definitions.MAX_RESULTS_PER_REQUEST_
+                query_params["offset"] += definitions.MAX_RESULTS_PER_REQUEST
 
             except (requests.RequestException, IndexError) as error:
                 error_traceback = "".join(
@@ -125,7 +125,7 @@ class Fetcher:
         params = {
             "start_date": self.start_date,
             "end_date": self.end_date,
-            "limit": definitions.MAX_RESULTS_PER_REQUEST_,
+            "limit": definitions.MAX_RESULTS_PER_REQUEST,
             "offset": 1,
             "format": "geojson",
         }
@@ -146,7 +146,7 @@ class Fetcher:
 
         if len(self.responses) == 0:
             settings.logger.critical("couldn't fetch healthy responses")
-            raise exceptions.NoHealthyRequestsError("couldn't fetch healthy responses")
+            return {"status": definitions.STATUS_PROCESS_FAIL, "error": True}
 
         self.data = list()
         for response in self.responses:
