@@ -7,9 +7,11 @@ from uvicorn import run
 import collect_dataset
 from earthquake_data_layer import settings
 from earthquake_data_layer.routes.collect import collect_router
+from earthquake_data_layer.routes.update import update_router
 
 app = FastAPI()
 
+app.include_router(update_router)
 app.include_router(collect_router)
 
 

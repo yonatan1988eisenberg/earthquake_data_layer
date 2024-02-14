@@ -3,6 +3,7 @@ import json
 import logging
 import random
 import string
+import traceback
 from collections.abc import Iterable
 from copy import deepcopy
 from random import choice
@@ -330,7 +331,7 @@ def fetch_months_data(
     metadata: Optional[dict] = None,
     storage: Optional[Storage] = None,
     runs_key: str = definitions.COLLECTION_RUNS_KEY,
-    metadata_key: str = definitions.COLLECTION_METADATA_KEY,
+    metadata_key: Optional[str] = definitions.COLLECTION_METADATA_KEY,
 ) -> dict:
     """
     Fetch earthquake data for a given list of months, saves the return value from fetcher.fetch_data() at {runs_key}
@@ -395,3 +396,20 @@ def fetch_months_data(
         metadata["status"] = definitions.STATUS_COLLECTION_METADATA_COMPLETE
 
     return metadata
+
+
+def verify_storage_connection(storage: Optional[Storage] = None):
+    """attempts to connect to the storage, returns True is successful, False otherwise"""
+    if not storage:
+        storage = Storage()
+
+    try:
+        storage.bucket_exists(create=True)
+        return True
+    except Exception as error:
+        error_traceback = "".join(
+            traceback.format_exception(None, error, error.__traceback__)
+        )
+        settings.logger.critical(f"Could not connect to the cloud:\n {error_traceback}")
+
+        return False

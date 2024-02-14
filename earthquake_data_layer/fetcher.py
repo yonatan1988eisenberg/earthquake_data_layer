@@ -6,7 +6,7 @@ from typing import Optional
 import requests
 from fake_headers import Headers
 
-from earthquake_data_layer import definitions, helpers, settings
+from earthquake_data_layer import definitions, exceptions, helpers, settings
 
 
 @dataclass
@@ -99,7 +99,7 @@ class Fetcher:
                 error_traceback = "".join(
                     traceback.format_exception(None, error, error.__traceback__)
                 )
-                settings.logger.critical(
+                settings.logger.error(
                     f"encountered an error while querying the API: {error_traceback}"
                 )
                 return {"status": definitions.STATUS_QUERY_API_FAIL, "error": error}
@@ -138,6 +138,11 @@ class Fetcher:
         """
 
         settings.logger.info("started processing the responses")
+
+        if len(self.responses) == 0:
+            settings.logger.critical("couldn't fetch healthy responses")
+            raise exceptions.NoHealthyRequestsError("couldn't fetch healthy responses")
+
         self.data = list()
         for response in self.responses:
             # sum the number of rows
