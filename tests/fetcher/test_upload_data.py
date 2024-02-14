@@ -13,7 +13,7 @@ def test_success(expected_key, expected_data, mock_fetcher):
     mock_fetcher.data = expected_data
 
     with patch(
-        "earthquake_data_layer.helpers.add_rows_to_parquet", return_value=True
+        "earthquake_data_layer.fetcher.add_rows_to_parquet", return_value=True
     ) as mock_upload:
         result = mock_fetcher.upload_data()
 
@@ -34,7 +34,7 @@ def test_failed(expected_key, expected_data, mock_fetcher):
     mock_fetcher.data = expected_data
 
     with patch(
-        "earthquake_data_layer.helpers.add_rows_to_parquet", return_value=False
+        "earthquake_data_layer.fetcher.add_rows_to_parquet", return_value=False
     ) as mock_upload:
         result = mock_fetcher.upload_data()
 

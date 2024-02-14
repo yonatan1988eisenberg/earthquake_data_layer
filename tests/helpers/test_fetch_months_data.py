@@ -35,7 +35,7 @@ def test_success(storage, mock_metadata, fetch_data_return_value):
             "earthquake_data_layer.helpers.add_rows_to_parquet", return_value=True
         ) as mock_save_rows:
             with patch(
-                "earthquake_data_layer.helpers.Fetcher.fetch_data",
+                "earthquake_data_layer.Fetcher.fetch_data",
                 return_value=fetch_data_return_value,
             ):
                 result_metadata = fetch_months_data(dates, mock_metadata, storage)

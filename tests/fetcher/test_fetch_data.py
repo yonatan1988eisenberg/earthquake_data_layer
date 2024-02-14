@@ -29,7 +29,7 @@ def test_success(
 
     with patch("earthquake_data_layer.fetcher.requests.get") as mock_response:
         with patch(
-            "earthquake_data_layer.helpers.add_rows_to_parquet", return_value=True
+            "earthquake_data_layer.fetcher.add_rows_to_parquet", return_value=True
         ):
             mock_response.side_effect = expected_responses
             result = mock_fetcher.fetch_data()

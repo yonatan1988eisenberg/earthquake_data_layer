@@ -6,7 +6,12 @@ from typing import Optional
 import requests
 from fake_headers import Headers
 
-from earthquake_data_layer import definitions, exceptions, helpers, settings
+from earthquake_data_layer import definitions, exceptions, settings
+from earthquake_data_layer.helpers import (
+    add_rows_to_parquet,
+    generate_raw_data_key_from_date,
+    is_valid_date,
+)
 
 
 @dataclass
@@ -40,7 +45,7 @@ class Fetcher:
 
         # validate input
         for date in (self.start_date, self.end_date):
-            if not helpers.is_valid_date(date):
+            if not is_valid_date(date):
                 raise ValueError(
                     f"start_date and end_date should be in {definitions.DATE_FORMAT} format"
                 )
@@ -160,8 +165,8 @@ class Fetcher:
         return {"status": definitions.STATUS_PROCESS_SUCCESS, "count": self.total_count}
 
     def upload_data(self):
-        data_uploaded = helpers.add_rows_to_parquet(
-            self.data, helpers.generate_raw_data_key_from_date(self.year, self.month)
+        data_uploaded = add_rows_to_parquet(
+            self.data, generate_raw_data_key_from_date(self.year, self.month)
         )
 
         if not data_uploaded:
