@@ -1,9 +1,11 @@
 import datetime
 import json
+import math
 import random
 import string
 import traceback
 from collections.abc import Iterable
+from threading import Thread
 from typing import Optional, Union
 
 import pandas as pd
@@ -110,6 +112,7 @@ def add_rows_to_parquet(
     - rows (dict | list[dict]): The data to append to the file.
     - key (str): The key for the parquet file. Default is the runs metadata key.
     - storage (Storage): A storage instance, optional.
+    - remove_duplicates (bool): if to drop duplicates, default to True.
 
     Returns:
     bool: True if the update is successful, False otherwise.
@@ -241,29 +244,39 @@ def fetch_months_data(
 
     settings.logger.info(LOG_MESSAGE_DOWNLOAD_DATA)
 
+    num_months = len(list(months))
+    num_batches = math.ceil(num_months / settings.COLLECTION_BATCH_SIZE)
+    settings.logger.info(f"expecting {num_batches} batch(s)")
+
     error_flag = False
     new_rows = list()
+    months = list(months)
+    for batch in range(num_batches):
 
-    for i, (year, month) in enumerate(months):
-        metadata["details"].setdefault(year, {})
+        batch_months = months[
+            batch
+            * settings.COLLECTION_BATCH_SIZE : (batch + 1)
+            * settings.COLLECTION_BATCH_SIZE
+        ]
+        batch_dates = [get_month_start_end_dates(*month) for month in months]
+        fetchers = [Fetcher(*date) for date in batch_dates]
+        threads = [Thread(target=fetcher.fetch_data) for fetcher in fetchers]
+        # pylint: disable=expression-not-assigned
+        [thread.start() for thread in threads]
+        [thread.join() for thread in threads]
 
-        start_date, end_date = get_month_start_end_dates(year, month)
-        fetcher = Fetcher(start_date=start_date, end_date=end_date)
-        result = fetcher.fetch_data()
+        for thread_result, (year, month) in zip(threads, batch_months):
+            if thread_result.get("status") == definitions.STATUS_UPLOAD_DATA_SUCCESS:
+                log_msg = LOG_MESSAGE_SUCCESS.format(year, month)
+                settings.logger.info(log_msg)
+                metadata["details"][year][month] = definitions.STATUS_PIPELINE_SUCCESS
+            else:
+                log_msg = LOG_MESSAGE_ERROR.format(year, month)
+                settings.logger.info(log_msg)
+                metadata["details"][year][month] = definitions.STATUS_PIPELINE_FAIL
+                error_flag = True
 
-        new_rows.append(result)
-
-        if result.get("status") == definitions.STATUS_UPLOAD_DATA_SUCCESS:
-            log_msg = LOG_MESSAGE_SUCCESS.format(year, month)
-            settings.logger.info(log_msg)
-            metadata["details"][year][month] = definitions.STATUS_PIPELINE_SUCCESS
-        else:
-            log_msg = LOG_MESSAGE_ERROR.format(year, month)
-            settings.logger.info(log_msg)
-            metadata["details"][year][month] = definitions.STATUS_PIPELINE_FAIL
-            error_flag = True
-
-        if i != 0 and i % settings.COLLECTION_BATCH_SIZE == 0:
+            settings.logger.info("batch ended, saving rows and metadata")
             if runs_key:
                 add_rows_to_parquet(new_rows, runs_key, storage=storage)
             if metadata_key:
@@ -272,8 +285,38 @@ def fetch_months_data(
                     metadata_key,
                 )
 
-    if runs_key:
-        add_rows_to_parquet(new_rows, runs_key, storage=storage)
+    # for i, (year, month) in enumerate(months):
+    #     metadata["details"].setdefault(year, {})
+    #
+    #     start_date, end_date = get_month_start_end_dates(year, month)
+    #     fetcher = Fetcher(start_date=start_date, end_date=end_date)
+    #     result = fetcher.fetch_data()
+    #
+    #     new_rows.append(result)
+    #
+    #     if result.get("status") == definitions.STATUS_UPLOAD_DATA_SUCCESS:
+    #         log_msg = LOG_MESSAGE_SUCCESS.format(year, month)
+    #         settings.logger.info(log_msg)
+    #         metadata["details"][year][month] = definitions.STATUS_PIPELINE_SUCCESS
+    #     else:
+    #         log_msg = LOG_MESSAGE_ERROR.format(year, month)
+    #         settings.logger.info(log_msg)
+    #         metadata["details"][year][month] = definitions.STATUS_PIPELINE_FAIL
+    #         error_flag = True
+    #
+    #     # save every batch_size
+    #     if i != 0 and i % settings.COLLECTION_BATCH_SIZE == 0:
+    #         settings.logger.info("batch ended, saving rows and metadata")
+    #         if runs_key:
+    #             add_rows_to_parquet(new_rows, runs_key, storage=storage)
+    #         if metadata_key:
+    #             storage.save_object(
+    #                 json.dumps(metadata).encode("utf-8"),
+    #                 metadata_key,
+    #             )
+
+    # if runs_key:
+    #     add_rows_to_parquet(new_rows, runs_key, storage=storage)
 
     if not error_flag:
         metadata["status"] = definitions.STATUS_COLLECTION_METADATA_COMPLETE
@@ -281,18 +324,18 @@ def fetch_months_data(
     return metadata
 
 
-def verify_storage_connection(storage: Optional[Storage] = None):
+def verify_storage_connection(storage: Optional[Storage] = None) -> bool:
     """attempts to connect to the storage, returns True is successful, False otherwise"""
     if not storage:
         storage = Storage()
 
     try:
-        storage.bucket_exists(create=True)
-        return True
+        if storage.bucket_exists(create=True):
+            return True
+        return False
     except Exception as error:
         error_traceback = "".join(
             traceback.format_exception(None, error, error.__traceback__)
         )
         settings.logger.critical(f"Could not connect to the cloud:\n {error_traceback}")
-
         return False

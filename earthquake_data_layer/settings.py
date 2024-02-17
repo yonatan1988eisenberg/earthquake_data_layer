@@ -16,7 +16,9 @@ load_dotenv()
 # collect data from as early as
 EARLIEST_EARTHQUAKE_DATE = "1900-01-01"
 # save the runs data every n months completed
-COLLECTION_BATCH_SIZE = 50
+COLLECTION_BATCH_SIZE = 2
+SLEEP_EVERY_N_REQUESTS = 40
+SLEEP_TIME = 300
 
 """ Quasi-unique ID Generations """
 # when uploading to storage without a key
@@ -41,7 +43,7 @@ INTEGRATION_TEST = get_bool("INTEGRATION_TEST")
 """ Logging """
 LOGGER_NAME = os.getenv("LOGGER_NAME", "EDL")
 LOGLEVEL = os.getenv("LOG_LEVEL", "ERROR").upper()
-log_format = f"""{LOGGER_NAME} :: %(levelname)-8s :: %(asctime)s %(filename)s:%(lineno)d -30s %(message)s"""
+log_format = f"""{LOGGER_NAME} :: %(levelname)-8s :: %(asctime)s %(filename)s:%(lineno)d %(message)s"""
 logging.basicConfig(
     stream=sys.stdout,
     format=log_format,

@@ -96,6 +96,11 @@ jobs:
          poetry run coverage run -m pytest
          poetry run coverage report --omit="tests/*"
 
+      # a fix when running locally - https://stackoverflow.com/questions/48957195/how-to-fix-docker-got-permission-denied-issue
+      - name: fix act docker permissions
+        if: ${{ env.ACT }}
+        run: sudo chmod 666 /var/run/docker.sock
+
       # run integration tests
       - name: integration_test
         env:

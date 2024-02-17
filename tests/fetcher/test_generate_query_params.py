@@ -7,8 +7,8 @@ from earthquake_data_layer import definitions
 @pytest.fixture(scope="function")
 def expected_params(mock_start_date, mock_end_date):
     return {
-        "start_date": mock_start_date,
-        "end_date": mock_end_date,
+        "startdate": mock_start_date,
+        "enddate": mock_end_date,
         "limit": definitions.MAX_RESULTS_PER_REQUEST,
         "offset": 1,
         "format": "geojson",
