@@ -7,8 +7,7 @@ MAX_RESULTS_PER_REQUEST = 20000
 
 # metadata and tables keys
 COLLECTION_METADATA_KEY = "data/collection_metadata.json"
-COLLECTION_RUNS_KEY = "data/collection.parquet"
-UPDATE_RUNS_KEY = "data/update.parquet"
+BATCH_METADATA_KEY = "data/batch_metadata.parquet"
 
 # fixed time and date format
 TODAY = datetime.datetime.now()

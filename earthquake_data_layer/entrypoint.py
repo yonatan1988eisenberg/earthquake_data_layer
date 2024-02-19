@@ -31,9 +31,9 @@ def collect_initial_dataset():
         verified = collect_dataset.verify_initial_dataset()
         if not verified:
             settings.logger.info(
-                f"failed to collect the initial dataset, retrying in {settings.SLEEP_TIME} seconds"
+                f"failed to collect the initial dataset, retrying in {settings.COLLECTION_SLEEP_TIME} seconds"
             )
-            sleep(settings.SLEEP_TIME)
+            sleep(settings.COLLECTION_SLEEP_TIME)
 
     settings.logger.info("The initial dataset was collected")
 

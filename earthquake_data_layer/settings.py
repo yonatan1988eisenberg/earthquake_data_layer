@@ -18,7 +18,7 @@ EARLIEST_EARTHQUAKE_DATE = "1900-01-01"
 # save the runs data every n months completed
 COLLECTION_BATCH_SIZE = 50
 SLEEP_EVERY_N_REQUESTS = 40
-SLEEP_TIME = 300
+COLLECTION_SLEEP_TIME = 3000
 # url to test proxy is working
 IP_VERIFYING_URL = "http://httpbin.org/ip"
 

@@ -25,8 +25,6 @@ def update_dataset(last_year: int, last_month: int):
         "last_date": last_date,
     }
 
-    metadata = helpers.fetch_months_data(
-        months, metadata, runs_key=definitions.UPDATE_RUNS_KEY, metadata_key=None
-    )
+    metadata = helpers.fetch_months_data(months, metadata, metadata_key=None)
 
     return metadata

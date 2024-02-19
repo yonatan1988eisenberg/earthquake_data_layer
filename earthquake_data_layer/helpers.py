@@ -213,7 +213,7 @@ def fetch_months_data(
     months: Iterable,
     metadata: Optional[dict] = None,
     storage: Optional[Storage] = None,
-    runs_key: str = definitions.COLLECTION_RUNS_KEY,
+    runs_key: str = definitions.BATCH_METADATA_KEY,
     metadata_key: Optional[str] = definitions.COLLECTION_METADATA_KEY,
 ) -> dict:
     """

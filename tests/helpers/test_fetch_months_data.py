@@ -52,7 +52,7 @@ def test_success(storage, mock_metadata, fetch_data_return_value):
         assert all(dates_results)
         assert mock_save_rows.call_count == expected_num_saves
         mock_save_rows.assert_called_once_with(
-            expected_rows, definitions.COLLECTION_RUNS_KEY, storage=storage
+            expected_rows, definitions.BATCH_METADATA_KEY, storage=storage
         )
 
 
@@ -91,7 +91,7 @@ def test_success_multiple_batches(storage, mock_metadata, fetch_data_return_valu
         assert all(dates_results)
         assert mock_save_rows.call_count == expected_num_saves
         mock_save_rows.assert_called_with(
-            expected_rows, definitions.COLLECTION_RUNS_KEY, storage=storage
+            expected_rows, definitions.BATCH_METADATA_KEY, storage=storage
         )
 
 
