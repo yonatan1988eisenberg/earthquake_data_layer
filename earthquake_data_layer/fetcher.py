@@ -1,9 +1,7 @@
 import threading
-import time
 import traceback
 from dataclasses import dataclass
 from functools import partial
-from random import random
 from typing import Optional
 
 import requests
@@ -15,6 +13,7 @@ from earthquake_data_layer.helpers import (
     generate_raw_data_key_from_date,
     is_valid_date,
 )
+from earthquake_data_layer.proxy_generator import ProxiesGenerator
 
 wait_event = threading.Event()
 
@@ -99,67 +98,87 @@ class Fetcher:
 
         # run the pipeline, return the metadata upon error
         for step in (
-            partial(self.query_api, kwargs.get("query_params", {})),
+            partial(self.query_api, kwargs.get("query_params"), kwargs.get("proxy")),
             partial(self.process),
             partial(self.upload_data),
         ):
             step_result = step()
             self.metadata.update(step_result)
             if self.metadata.get("error"):
+                settings.logger.critical(
+                    f"{self.year}-{self.month}: encountered an error, status: {self.metadata.get('status')}"
+                )
                 break
 
-        settings.logger.info("finished fetching the data")
+        settings.logger.info(
+            f"{self.year}-{self.month}: finished fetching the data. successful: {'error' in self.metadata.keys()}"
+        )
 
         return self.metadata
 
-    def query_api(self, query_params) -> dict:
+    def query_api(
+        self,
+        query_params: Optional[dict] = None,
+        proxy_generator: Optional[ProxiesGenerator] = None,
+        retries: int = 10,
+    ) -> dict:
         """
         Query the API for earthquake data within the specified time frame.
 
         Args:
             query_params (dict): Query parameters.
+            proxy_generator (ProxiesGenerator): an initialized ProxiesGenerator object
+            retries (int): number of allowed API exceptions raised
 
         Returns:
             dict: Status of the API query.
         """
         # generate query params
+        query_params = query_params or dict()
         query_params = self.generate_query_params(query_params)
 
         # get all the data for the time frame, query until the count is < limit or error occurred
         settings.logger.info(f"{self.year}-{self.month}: starting to query the API")
         self.responses = list()
 
-        # a flag to single we're done fetching and a placeholder
+        # a flag to single we're done fetching, a placeholder and retries counter
         done_fetching = False
         last_error = None
-
+        try_ = 0
         while True:
             try:
-                sleep_time = random() * 5
                 settings.logger.debug(
-                    f"{self.year}-{self.month}: sleeping for {sleep_time} seconds"
+                    f"{self.year}-{self.month} (try {try_}): query num {len(self.responses) + 1}"
                 )
-                time.sleep(sleep_time)
-                settings.logger.debug(
-                    f"{self.year}-{self.month}: query num {len(self.responses) + 1}"
+                proxy = (
+                    proxy_generator.gen()
+                    if isinstance(proxy_generator, ProxiesGenerator)
+                    else None
                 )
 
                 response = requests.get(
                     definitions.API_URL,
                     headers=self.header.generate(),
+                    proxies=proxy,
                     params=query_params,
                     timeout=5,
                 )
 
-                # If the request is successful, reset the event
-                wait_event.clear()
-
-                settings.logger.debug(f"{self.year}-{self.month}: successfully queried")
+                settings.logger.debug(
+                    f"{self.year}-{self.month} (try {try_}): successfully queried"
+                )
+                settings.logger.debug(
+                    f"{self.year}-{self.month} (try {try_}): proxy: {proxy}"
+                )
                 response = response.json()
                 self.responses.append(response)
 
-                # check if we need more requests
+                # check if we're done
                 if response["metadata"]["count"] < definitions.MAX_RESULTS_PER_REQUEST:
+                    settings.logger.debug(
+                        f"{self.year}-{self.month} (try {try_}): setting 'done_fetching' to True"
+                    )
+                    done_fetching = True
                     break
 
                 query_params["offset"] += definitions.MAX_RESULTS_PER_REQUEST
@@ -170,26 +189,21 @@ class Fetcher:
                     traceback.format_exception(None, error, error.__traceback__)
                 )
                 settings.logger.error(
-                    f"{self.year}-{self.month}: encountered an error while querying the API: {error_traceback}"
+                    f"{self.year}-{self.month} (try {try_}): encountered an error while querying the API: {error_traceback}"
                 )
-                settings.logger.debug(
-                    f"{self.year}-{self.month}: sleeping for {settings.SLEEP_TIME} seconds before resuming"
-                )
-                # If there's an error, set the event to make threads wait
-                wait_event.set()
 
-                # Wait for 10 minutes or until the event is cleared
-                wait_event.wait(timeout=settings.SLEEP_TIME)
-                settings.logger.debug(f"{self.year}-{self.month}: awake")
+                try_ += 1
+                if try_ > retries:
+                    break
 
         settings.logger.info(
-            f"finished querying the API, num responses: {len(self.responses)}"
+            f"{self.year}-{self.month}: finished querying the API, num responses: {len(self.responses)}"
         )
 
         if not done_fetching:
             return {
                 "status": definitions.STATUS_QUERY_API_FAIL,
-                "error": str(last_error),
+                "error": repr(last_error),
             }
 
         return {"status": definitions.STATUS_QUERY_API_SUCCESS}
@@ -205,8 +219,6 @@ class Fetcher:
             dict: Updated query parameters.
         """
 
-        query_params = query_params or dict()
-
         params = {
             "starttime": self.start_date,
             "endtime": self.end_date,
@@ -215,10 +227,11 @@ class Fetcher:
             "format": "geojson",
         }
 
+        query_params = query_params or {}
         params.update(query_params)
 
-        settings.logger.info("generated query parameters")
-        settings.logger.debug(f"{params}")
+        settings.logger.info(f"{self.year}-{self.month}: generated query parameters")
+        settings.logger.debug(f"{self.year}-{self.month}: {params}")
 
         return params
 
@@ -230,10 +243,14 @@ class Fetcher:
             dict: Status of the processing.
         """
 
-        settings.logger.info("started processing the responses")
+        settings.logger.info(
+            f"{self.year}-{self.month}: started processing the responses"
+        )
 
         if len(self.responses) == 0:
-            settings.logger.critical("couldn't fetch healthy responses")
+            settings.logger.critical(
+                f"{self.year}-{self.month}: couldn't fetch healthy responses"
+            )
             return {"status": definitions.STATUS_PROCESS_FAIL, "error": True}
 
         self.data = list()
@@ -248,7 +265,9 @@ class Fetcher:
             ]
             self.data.extend(response_data)
 
-        settings.logger.info("finished processing the responses")
+        settings.logger.info(
+            f"{self.year}-{self.month}: finished processing the responses"
+        )
 
         return {"status": definitions.STATUS_PROCESS_SUCCESS, "count": self.total_count}
 
@@ -259,14 +278,20 @@ class Fetcher:
         Returns:
             dict: Status of the data upload.
         """
+
+        settings.logger.info(f"{self.year}-{self.month}: started to upload the data")
+
         key = generate_raw_data_key_from_date(self.year, self.month)
 
         data_uploaded = add_rows_to_parquet(self.data, key)
 
         if not data_uploaded:
-            settings.logger.critical("encountered an error while uploading the data")
+            settings.logger.critical(
+                f"{self.year}-{self.month}: encountered an error while uploading the data"
+            )
             return {"status": definitions.STATUS_UPLOAD_DATA_FAIL, "error": True}
 
+        settings.logger.info(f"{self.year}-{self.month}: finished uploading the data")
         return {"data_key": key, "status": definitions.STATUS_UPLOAD_DATA_SUCCESS}
 
     @property

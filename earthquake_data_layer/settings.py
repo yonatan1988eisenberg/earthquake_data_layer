@@ -16,16 +16,18 @@ load_dotenv()
 # collect data from as early as
 EARLIEST_EARTHQUAKE_DATE = "1900-01-01"
 # save the runs data every n months completed
-COLLECTION_BATCH_SIZE = 2
+COLLECTION_BATCH_SIZE = 50
 SLEEP_EVERY_N_REQUESTS = 40
 SLEEP_TIME = 300
+# url to test proxy is working
+IP_VERIFYING_URL = "http://httpbin.org/ip"
+
 
 """ Quasi-unique ID Generations """
 # when uploading to storage without a key
 RANDOM_STRING_LENGTH_KEY = 5
 
 """ Environment Variables"""
-
 # earthquake data layer creds
 DATA_LAYER_ENDPOINT = os.getenv("DATA_LAYER_ENDPOINT", "localhost")
 DATA_LAYER_PORT = os.getenv("DATA_LAYER_PORT", "9000")

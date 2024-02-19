@@ -1,4 +1,5 @@
 # pylint: disable=redefined-outer-name
+import math
 from unittest.mock import patch
 
 import pytest
@@ -27,8 +28,8 @@ def test_success(storage, mock_metadata, fetch_data_return_value):
         for month in range(1, 13)
     ]
 
-    # two uploads for every batch and an extra at the end
-    expected_num_saves = (len(dates) // settings.COLLECTION_BATCH_SIZE) + 1
+    # once for every batch
+    expected_num_saves = math.ceil(len(dates) / settings.COLLECTION_BATCH_SIZE)
     expected_rows = [fetch_data_return_value] * len(dates)
     with patch("collect_dataset.Storage", return_value=storage):
         with patch(
@@ -65,8 +66,9 @@ def test_success_multiple_batches(storage, mock_metadata, fetch_data_return_valu
         for month in range(1, 13)
     ]
 
-    # an upload for every batch and an extra at the end
-    expected_num_saves = (len(dates) // settings.COLLECTION_BATCH_SIZE) + 1
+    # once for every batch
+    expected_num_saves = math.ceil(len(dates) / settings.COLLECTION_BATCH_SIZE)
+
     expected_rows = [fetch_data_return_value] * len(dates)
     with patch("collect_dataset.Storage", return_value=storage):
         with patch(
@@ -103,8 +105,9 @@ def test_fail(storage, mock_metadata):
         for month in range(1, 13)
     ]
 
-    # two uploads for every batch and an extra at the end
-    expected_num_saves = ((len(dates) // settings.COLLECTION_BATCH_SIZE) * 2) + 1
+    # twice for every batch (one for row and one for metadata)
+    expected_num_saves = 2 * math.ceil(len(dates) / settings.COLLECTION_BATCH_SIZE)
+
     with patch("collect_dataset.Storage", return_value=storage):
         with patch.object(storage, "save_object", return_value=True) as mock_save:
             with patch(

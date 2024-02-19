@@ -24,7 +24,7 @@ def test_error(mock_fetcher):
         mock_response.side_effect = expected_error
         result = mock_fetcher.query_api(query_params={})
 
-        assert result.get("error") == expected_error
+        assert result.get("error") == repr(expected_error)
         assert result.get("status") == definitions.STATUS_QUERY_API_FAIL
 
 

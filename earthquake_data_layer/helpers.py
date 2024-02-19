@@ -1,3 +1,4 @@
+import concurrent
 import datetime
 import json
 import math
@@ -5,7 +6,6 @@ import random
 import string
 import traceback
 from collections.abc import Iterable
-from threading import Thread
 from typing import Optional, Union
 
 import pandas as pd
@@ -14,6 +14,7 @@ import pyarrow.parquet as pq
 from dateutil.relativedelta import relativedelta
 
 from earthquake_data_layer import definitions, settings
+from earthquake_data_layer.proxy_generator import ProxiesGenerator
 from earthquake_data_layer.storage import Storage
 
 LOG_MESSAGE_DATASET_MONTHS = "initiated DatasetMonths with time frame {} - {}"
@@ -164,7 +165,7 @@ class DatasetMonths:
 
         self.verify_input()
 
-        settings.logger.info(
+        settings.logger.debug(
             f"initiated DatasetMonths with time frame {self.first_date.strftime(definitions.DATE_FORMAT)} - {self.last_date.strftime(definitions.DATE_FORMAT)}"
         )
 
@@ -251,72 +252,59 @@ def fetch_months_data(
     error_flag = False
     new_rows = list()
     months = list(months)
+    proxy_generator = ProxiesGenerator()
     for batch in range(num_batches):
+        settings.logger.info(f"starting batch {batch + 1}")
 
         batch_months = months[
             batch
             * settings.COLLECTION_BATCH_SIZE : (batch + 1)
             * settings.COLLECTION_BATCH_SIZE
         ]
-        batch_dates = [get_month_start_end_dates(*month) for month in months]
-        fetchers = [Fetcher(*date) for date in batch_dates]
-        threads = [Thread(target=fetcher.fetch_data) for fetcher in fetchers]
-        # pylint: disable=expression-not-assigned
-        [thread.start() for thread in threads]
-        [thread.join() for thread in threads]
+        batch_dates = [get_month_start_end_dates(*month) for month in batch_months]
+        batch_fetchers = [Fetcher(*date) for date in batch_dates]
 
-        for thread_result, (year, month) in zip(threads, batch_months):
+        # run the batch concurrently
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=len(batch_fetchers)
+        ) as executor:
+            futures = [
+                executor.submit(fetcher.fetch_data, proxy=proxy_generator)
+                for fetcher in batch_fetchers
+            ]
+            concurrent.futures.wait(futures)
+            thread_results = [future.result() for future in futures]
+
+        # process batch results
+        for thread_result, (year, month) in zip(thread_results, batch_months):
+            new_rows.append(thread_result)
+            metadata["details"].setdefault(str(year), {})
+
             if thread_result.get("status") == definitions.STATUS_UPLOAD_DATA_SUCCESS:
                 log_msg = LOG_MESSAGE_SUCCESS.format(year, month)
                 settings.logger.info(log_msg)
-                metadata["details"][year][month] = definitions.STATUS_PIPELINE_SUCCESS
+                metadata["details"][str(year)][
+                    month
+                ] = definitions.STATUS_PIPELINE_SUCCESS
             else:
                 log_msg = LOG_MESSAGE_ERROR.format(year, month)
                 settings.logger.info(log_msg)
-                metadata["details"][year][month] = definitions.STATUS_PIPELINE_FAIL
+                metadata["details"][str(year)][month] = definitions.STATUS_PIPELINE_FAIL
                 error_flag = True
 
-            settings.logger.info("batch ended, saving rows and metadata")
-            if runs_key:
-                add_rows_to_parquet(new_rows, runs_key, storage=storage)
-            if metadata_key:
-                storage.save_object(
-                    json.dumps(metadata).encode("utf-8"),
-                    metadata_key,
-                )
+        settings.logger.info(f"finished batch {batch + 1}")
+        # save if keys are provided
+        if runs_key:
+            settings.logger.debug("saving rows")
+            add_rows_to_parquet(new_rows, runs_key, storage=storage)
+        if metadata_key:
+            settings.logger.debug("saving metadata")
+            storage.save_object(
+                json.dumps(metadata).encode("utf-8"),
+                metadata_key,
+            )
 
-    # for i, (year, month) in enumerate(months):
-    #     metadata["details"].setdefault(year, {})
-    #
-    #     start_date, end_date = get_month_start_end_dates(year, month)
-    #     fetcher = Fetcher(start_date=start_date, end_date=end_date)
-    #     result = fetcher.fetch_data()
-    #
-    #     new_rows.append(result)
-    #
-    #     if result.get("status") == definitions.STATUS_UPLOAD_DATA_SUCCESS:
-    #         log_msg = LOG_MESSAGE_SUCCESS.format(year, month)
-    #         settings.logger.info(log_msg)
-    #         metadata["details"][year][month] = definitions.STATUS_PIPELINE_SUCCESS
-    #     else:
-    #         log_msg = LOG_MESSAGE_ERROR.format(year, month)
-    #         settings.logger.info(log_msg)
-    #         metadata["details"][year][month] = definitions.STATUS_PIPELINE_FAIL
-    #         error_flag = True
-    #
-    #     # save every batch_size
-    #     if i != 0 and i % settings.COLLECTION_BATCH_SIZE == 0:
-    #         settings.logger.info("batch ended, saving rows and metadata")
-    #         if runs_key:
-    #             add_rows_to_parquet(new_rows, runs_key, storage=storage)
-    #         if metadata_key:
-    #             storage.save_object(
-    #                 json.dumps(metadata).encode("utf-8"),
-    #                 metadata_key,
-    #             )
-
-    # if runs_key:
-    #     add_rows_to_parquet(new_rows, runs_key, storage=storage)
+    settings.logger.info(f"finished all batches, successful: {error_flag}")
 
     if not error_flag:
         metadata["status"] = definitions.STATUS_COLLECTION_METADATA_COMPLETE

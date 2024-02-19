@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 import requests
 
-from earthquake_data_layer import definitions
+from earthquake_data_layer import definitions, helpers
 from tests.utils import MockApiResponse
 
 
@@ -16,6 +16,9 @@ def expected_metadata(mock_start_date, mock_end_date, expected_count):
         "count": expected_count,
         "execution_date": definitions.TODAY,
         "status": definitions.STATUS_UPLOAD_DATA_SUCCESS,
+        "data_key": helpers.generate_raw_data_key_from_date(
+            mock_start_date[:4], mock_start_date[5:7]
+        ),
     }
 
 
@@ -40,9 +43,10 @@ def test_success(
 def test_error_api(mock_fetcher, expected_metadata):
     expected_error = requests.RequestException()
     expected_metadata.update(
-        {"status": definitions.STATUS_QUERY_API_FAIL, "error": expected_error}
+        {"status": definitions.STATUS_QUERY_API_FAIL, "error": repr(expected_error)}
     )
     expected_metadata.pop("count")
+    expected_metadata.pop("data_key")
 
     with patch("earthquake_data_layer.fetcher.requests.get") as mock_response:
         mock_response.side_effect = expected_error
