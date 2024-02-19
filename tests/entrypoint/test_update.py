@@ -29,7 +29,7 @@ def test_storage_connection_error(client):
         response = client.get("/update/2020-01-01")
 
     # Assert that the response status code is 501 (HTTPException status_code for StorageConnectionError)
-    assert response.status_code == definitions.HTTP_COULDNT_CONNECT_TO_STORAGE
+    assert response.status_code == definitions.HTTP_COULD_NOT_CONNECT_TO_STORAGE
 
 
 def test_update_generic_error(client, storage):

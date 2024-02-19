@@ -45,7 +45,7 @@ class Proxy:
 
 
 class ProxiesGenerator:
-    def __init__(self, schema: str = "http", refresh_timeout=5, test_timeout=0.5):
+    def __init__(self, schema: str = "http", refresh_timeout=30, test_timeout=0.5):
         self.Categories = {
             "SSL": SSL,
             "GOOGLE": GOOGLE,
@@ -117,7 +117,7 @@ class ProxiesGenerator:
                     for proxy in category_proxies
                 ]
                 proxies.extend(category_proxies)
-            except ConnectionError:
+            except requests.RequestException:
                 settings.logger.error(
                     f"Connection Error in refreshing {category_name} proxies"
                 )
