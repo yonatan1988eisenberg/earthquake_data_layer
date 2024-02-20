@@ -93,7 +93,7 @@ jobs:
       # run tests
       - name: Run tests
         run: |
-         poetry run coverage run -m pytest
+         poetry run coverage run -m pytest tests
          poetry run coverage report --omit="tests/*"
 
       # a fix when running locally - https://stackoverflow.com/questions/48957195/how-to-fix-docker-got-permission-denied-issue
