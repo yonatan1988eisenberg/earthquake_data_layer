@@ -14,7 +14,7 @@
 - minor bugs fix
 
 ### Version 1.0.0
-- deprecated the use of rapidapi as midiator
+- deprecated the use of rapidapi as mediator
 - deprecated the route collect, the collection pipeline is now initiated when the application is running, unless previously completed.
 - the update pipeline updates the data from the last 12 months.
 - a multithreading approach is used to speed up the collection process.
