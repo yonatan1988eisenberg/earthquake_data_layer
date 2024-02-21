@@ -5,9 +5,10 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from earthquake_data_layer import definitions, helpers
+from earthquake_data_layer import helpers
 
 
+# todo: rewrite tests with current data scheme, add test to make sure duplicates are removed
 def test_file_dont_exist_single_row(sample_response, storage):
     with (
         patch("earthquake_data_layer.Storage.list_objects"),
@@ -16,7 +17,7 @@ def test_file_dont_exist_single_row(sample_response, storage):
         ) as upload_func,
     ):
         result = helpers.add_rows_to_parquet(
-            rows=sample_response, storage=storage, key=definitions.ERRED_RESPONSES_KEY
+            rows=sample_response, key="sample_key.parquet", storage=storage
         )
         uploaded_df = upload_func.call_args[0][0]
 
@@ -49,8 +50,9 @@ def test_file_exist(sample_response, inverted_sample_response, storage):
     ):
         result = helpers.add_rows_to_parquet(
             rows=inverted_sample_response,
+            key="sample_key.parquet",
             storage=storage,
-            key=definitions.ERRED_RESPONSES_KEY,
+            remove_duplicates=False,
         )
         uploaded_df = upload_func.call_args[0][0]
 

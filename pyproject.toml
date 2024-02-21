@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "earthquake-data-layer"
-version = "0.5.2"
+version = "1.0.0"
 description = ""
 authors = ["Yonatan Eisenberg <yonatan.eis@gmail.com>"]
 readme = "README.md"
@@ -15,6 +15,7 @@ pandas = "^2.1.4"
 pyarrow = "^14.0.2"
 fastapi = "^0.108.0"
 uvicorn = {extras = ["standard"], version = "^0.25.0"}
+fake-headers = "^1.0.2"
 
 
 [tool.poetry.group.dev.dependencies]

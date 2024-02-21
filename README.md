@@ -12,99 +12,51 @@ The goal is to build a machine learning model that predicts earthquakes weekly a
    - [Dataset Collection](#dataset-collection)
    - [Dataset Update](#dataset-update)
    - [Storage Operations](#storage-operations)
-2. [Main Components](#main-components)
-   - [MetadataManager](#metadatamanager)
-   - [Downloader](#downloader)
-   - [Preprocess](#preprocess)
-   - [Validate](#validate)
-   - [Storage](#storage)
-3. [Getting Started](#getting-started)
+2. [Getting Started](#getting-started)
    - [Prerequisites](#prerequisites)
    - [Installation](#installation)
-4. [Usage](#usage)
-5. [Contributing](#contributing)
-6. [License](#license)
+3. [Usage](#usage)
+4. [Contributing](#contributing)
+5. [License](#license)
 
 
 ## Responsibilities
 
-### Dataset Collection
+### Dataset Collection and Update
 
-The first aim of this project is to collect a dataset of earthquakes via an API (https://rapidapi.com/dbarkman/api/everyearthquake),
-each request made to the API requires a start_date and an end_data parameter to filter returned results. <br>
-Due to API request limitations (150 per day) and response data rows (1k), fetching all data at once (4M rows) is not feasible.
-In addition, each API response returns the first n results starting with the newest to the oldest, using an offset param to
-allow collection of more than {max_allowed_results} results from the same date. <br>
-To overcome this data collections will be made in cycles, with root metadata file ([0] in the below data scheme) at its core.
-Among other information the metadata file will include 4 important keys:<br>
-start_date - defaults to setting.EARLIEST_EARTHQUAKE_DATE<br>
-end_date - defaults to {yesterday}<br>
-offset - defaults to 1<br>
-collection_start_time - defaults to False<br>
-When the collection pipeline will initiate the first cycle will begin and the following algorithm will ensure all the data is collected:<br>
-* collection_start_time will be set to {today} and data from start_date to {collection_start_time - 1 day} will be gathered by conducting as many runs as needed.<br>
-* When all the data will be gathered (end_date = start_date) start_date will be set to {collection_start_time - 1 day} and collection_start_time will be set to False, indicating a new cycle begins.<br>
-
-The process repeats until all the data since {setting.EARLIEST_EARTHQUAKE_DATE} is collected.
-The data collection process is designed to span approximately a month to retrieve the entire dataset after which data from that time
-will be retrieved until all the data is retrieved.
-
-### Dataset Update
-
-After collecting the initial dataset a model to predict earthquake for the coming week was trained.
-The model's predictions will be verified and monitored by calling the API periodically.
+The aim of this project is to collect a dataset of earthquakes via an API (https://earthquake.usgs.gov/fdsnws/event/1/query) and update it periodically.
+When the application is initiated all the data since {setting.EARLIEST_EARTHQUAKE_DATE} will be collected. In case of
+error the system is designed to attempt to complete the collection process (patch) after settings.COLLECTION_SLEEP_TIME seconds.
+To assist in the patching and to prevent rerunning the long collection process, a json file is stored on cloud, its
+location is marked in the below storage scheme with [0].
+The data collection process was tested with run time of approximately 40 minutes per decade of data. <br>
+An update of the last 12 months is initiated with a call to the route defined @/update/{date}.
+For both dataset collection and update the data retrieved from the API is batched (query, process and save) in regard
+to its calendar month, the results of each of these batches is stored on cloud at [1].
+The data collection process was tested with run time of approximately 40 minutes per decade of data.
 
 ### Storage Operations
 
 The system includes functionality for downloading and uploading data to remote storage.<br>
-Data will be uploaded to a dedicated bucket in the cloud, in the following the data scheme:
+Data will be uploaded to a dedicated bucket in the cloud, using the following the scheme:
 ```
 {bucket_root}
-    [0]metadata.json
     /data
+        [0] collection_metadata.json
+        [1] batch_metadata.parquet: contains the metadata from each batch (each row is a bacth)
         / raw_data
             / {year}
-                [1] {run_id}_data.parquet: contains each run's data (each row is an earthquake)
-                .
-                .
-                .
-        / runs
-            [2] runs.parquet: contains all the runs' metadata
-            / {year}
-                [3] {run_id}.parquet: contains each run's responses metadata
+                [2] {year}_{month}_raw_data.parquet: contains each month/batch's data (each row is an earthquake)
                 .
                 .
                 .
 ```
-
-## Main Components
-
-### MetadataManager
-The class responsibilities include fetching, updating, and saving metadata.
-It provides methods for retrieving information such as collection dates,
-remaining requests for API keys, and updating these values.
-
-### Downloader
-This class handles the retrieval of data from an API, managing API keys, generating request parameters,
-and executing concurrent requests for efficient data collection.
-
-### Preprocess
-The class responsibilities include processing individual responses, aggregating metadata and processed data,
-and calculating information for the next run. It facilitates the preparation of data and metadata for
-further analysis.
-
-### Validate
-Validates run metadata with a series of steps such as scheme validation and missing values identification.
-
-### Storage
-Class for handling S3 storage operations.
 
 ## Getting Started
 
 ### Prerequisites
 
 - poetry (https://python-poetry.org/docs/)
-- API key (https://rapidapi.com/dbarkman/api/everyearthquake)
 - An S3 compatible cloud storage account. Check out https://notes.amarvyas.in/list-s3-compatible-storage-providers/ for suggestions
 
 ### Installation
@@ -119,21 +71,27 @@ Class for handling S3 storage operations.
    poetry install
    poetry shell
 
-3. Configure API access and storage settings in the configuration file .env.
+3. Configure storage settings in the configuration file .env.
 In addition, its worth taking a look setting and definitions to see that the chosen values work for you.
 
 ### Usage
 
-to run manually call:
-
+To run with docker compose build the image using the Dockerfile and add to compose.yaml:
 ```bash
-collect.run_collection(run_id)
-````
-
-or via the api: <br>
-run earthquake_data_layer.entrypoint
-and call using the route
-/collect/{run_id}
+services:
+   earthquake-data-layer:
+    image: {YOUR_IMAGE_NAME}
+    environment:
+      DATA_LAYER_ENDPOINT: {DATA_LAYER_ENDPOINT}
+      DATA_LAYER_PORT: {DATA_LAYER_PORT}
+      AWS_S3_ENDPOINT: {AWS_S3_ENDPOINT}
+      AWS_ACCESS_KEY_ID: {AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: {AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: {AWS_REGION}
+      AWS_BUCKET_NAME: {AWS_BUCKET_NAME}
+    expose:
+      - {DATA_LAYER_PORT}
+```
 
 ### Contributing
 

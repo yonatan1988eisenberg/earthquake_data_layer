@@ -13,9 +13,15 @@
 ### Version 0.5.2
 - minor bugs fix
 
+### Version 1.0.0
+- deprecated the use of rapidapi as mediator
+- deprecated the route collect, the collection pipeline is now initiated when the application is running, unless previously completed.
+- the update pipeline updates the data from the last 12 months.
+- a multithreading approach is used to speed up the collection process.
+- requests to the API use proxy to prevent detection.
+- erred requests are retied n times.
+
 ### Roadmap
 #### Versions:
-- 1.0.0: - Update pipeline (fetching last {n} days' data)
 
 #### Features
-- Requery erred requests

@@ -1,5 +1,4 @@
 # pylint: disable=redefined-outer-name,unused-argument,import-outside-toplevel
-import datetime
 import os
 from collections import Counter
 
@@ -7,7 +6,7 @@ import boto3
 import pytest
 from moto import mock_s3
 
-from earthquake_data_layer import definitions
+from earthquake_data_layer.definitions import EXPECTED_DATA_DATE_FORMAT, TODAY
 
 
 @pytest.fixture
@@ -38,7 +37,9 @@ def blank_metadata():
 
 @pytest.fixture(scope="module")
 def test_bucket():
-    return "test-bucket"
+    bucket_name = "test-bucket"
+    os.environ["AWS_BUCKET_NAME"] = bucket_name
+    return bucket_name
 
 
 @pytest.fixture(scope="module")
@@ -58,8 +59,8 @@ def storage(aws_credentials, test_bucket):
         from earthquake_data_layer import Storage
 
         s3_client = boto3.client("s3")
-        storage = Storage(client=s3_client)
-        assert storage.bucket_exists(test_bucket, create=True)
+        storage = Storage(client=s3_client, bucket_name=test_bucket)
+        assert storage.bucket_exists(create=True)
         yield storage
 
 
@@ -92,7 +93,7 @@ def sample_response(num_rows, num_cols):
         row_data = dict()
         for col in range(num_cols):
             row_data[f"row{row}_col{col}"] = row * col
-        row_data["date"] = definitions.TODAY.strftime(definitions.EXPECTED_DATE_FORMAT)
+        row_data["date"] = TODAY.strftime(EXPECTED_DATA_DATE_FORMAT)
 
         mock_data.append(row_data)
 
@@ -118,7 +119,7 @@ def inverted_sample_response(num_rows, num_cols):
         row_data = dict()
         for col in range(num_rows):
             row_data[f"row{row}_col{col}"] = row * col
-        row_data["date"] = definitions.TODAY.strftime(definitions.EXPECTED_DATE_FORMAT)
+        row_data["date"] = TODAY.strftime(EXPECTED_DATA_DATE_FORMAT)
 
         mock_data.append(row_data)
 
@@ -135,15 +136,3 @@ def inverted_sample_response(num_rows, num_cols):
             "key_name": "sample_key",
         },
     }
-
-
-@pytest.fixture
-def mock_dates_counter(num_rows, num_cols):
-    today_str = definitions.TODAY.strftime(definitions.DATE_FORMAT)
-    tomorrow_str = (definitions.TODAY + datetime.timedelta(days=1)).strftime(
-        definitions.DATE_FORMAT
-    )
-    row_date = Counter()
-    row_date.update([today_str] * num_rows + [tomorrow_str] * num_cols)
-
-    return row_date

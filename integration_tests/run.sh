@@ -11,10 +11,11 @@ cd "$(dirname "$0")"
 
 # start container
 docker-compose up -d
-sleep 5
+sleep 10
 
 # run tests
-status_code=$(curl --write-out %{http_code} --silent --output /dev/null ${DATA_LAYER_ENDPOINT}:${DATA_LAYER_PORT}/collect/sample_id)
+status_code=$(curl --write-out %{http_code} --silent --output /dev/null ${DATA_LAYER_ENDPOINT}:${DATA_LAYER_PORT}/update/2020-01-01)
+echo status_code=${status_code}
 
 # resume original state
 docker-compose down
