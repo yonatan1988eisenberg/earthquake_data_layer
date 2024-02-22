@@ -1,4 +1,3 @@
-import threading
 import traceback
 from dataclasses import dataclass
 from functools import partial
@@ -14,8 +13,6 @@ from earthquake_data_layer.helpers import (
     is_valid_date,
 )
 from earthquake_data_layer.proxy_generator import ProxiesGenerator
-
-wait_event = threading.Event()
 
 
 @dataclass
