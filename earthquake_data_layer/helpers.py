@@ -59,9 +59,9 @@ def is_valid_date(
     return False
 
 
-def generate_raw_data_key_from_date(year: str, month: str):
+def generate_raw_data_key_from_date(year: Union[str, int], month: Union[str, int]):
     """generates a key for a data file based on a date"""
-    return f"data/raw_data/{year}/{year}_{month}_raw_data.parquet"
+    return f"data/raw_data/{year}/{year}_{str(month).zfill(2)}_raw_data.parquet"
 
 
 def get_month_start_end_dates(year: int, month: int) -> tuple[str, str]:
