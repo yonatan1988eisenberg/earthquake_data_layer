@@ -1,4 +1,3 @@
-import threading
 import traceback
 from dataclasses import dataclass
 from functools import partial
@@ -14,8 +13,6 @@ from earthquake_data_layer.helpers import (
     is_valid_date,
 )
 from earthquake_data_layer.proxy_generator import ProxiesGenerator
-
-wait_event = threading.Event()
 
 
 @dataclass
@@ -253,17 +250,35 @@ class Fetcher:
             )
             return {"status": definitions.STATUS_PROCESS_FAIL, "error": True}
 
-        self.data = list()
+        if self.data is None:
+            self.data = list()
+
         for response in self.responses:
             # sum the number of rows
             self.total_count += response["metadata"]["count"]
 
             # bundle all the data to one list of dictionaries
-            response_data = [
-                {**feature.get("properties", {}), "id": feature.get("id")}
-                for feature in response["features"]
-            ]
-            self.data.extend(response_data)
+            for feature in response["features"]:
+                # get geometric features
+                geometric_features = dict()
+                # verify the coordinates are a list
+                if feature.get("geometry", {}).get("type") == "Point":
+                    feature_coordinates = feature.get("geometry").get("coordinates")
+                    if isinstance(feature_coordinates, list):
+                        # verify at least two values, the third is an option
+                        if len(feature_coordinates) >= 2:
+                            geometric_features["longitude"] = feature_coordinates[0]
+                            geometric_features["latitude"] = feature_coordinates[1]
+                        if len(feature_coordinates) == 3:
+                            geometric_features["depth"] = feature_coordinates[2]
+
+                # construct the feature row and append it to the data
+                feature_row = {
+                    **feature.get("properties", {}),
+                    "id": feature.get("id"),
+                    **geometric_features,
+                }
+                self.data.append(feature_row)
 
         settings.logger.info(
             f"{self.year}-{self.month}: finished processing the responses"
